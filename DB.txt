@@ -1,0 +1,113 @@
+-- 1. BASE DE DATOS
+CREATE DATABASE IF NOT EXISTS bienes_raices_db
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE bienes_raices_db;
+
+-- 2. USUARIOS CON ROLES
+CREATE TABLE IF NOT EXISTS usuarios_admin (
+    id VARCHAR(30) PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(150) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NULL,
+    rol ENUM('Administrador', 'agente_inmobiliario') NOT NULL DEFAULT 'agente_inmobiliario',
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_contratacion DATE NOT NULL,
+    fecha_fin_contratacion DATE NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- 3. TIPOS DE INMUEBLE
+CREATE TABLE IF NOT EXISTS tipos_inmueble (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE
+) ENGINE=InnoDB;
+
+-- 4. PROPIEDADES
+CREATE TABLE IF NOT EXISTS propiedades (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    titulo VARCHAR(200) NOT NULL,
+    descripcion_corta VARCHAR(300) NOT NULL,
+    descripcion_larga TEXT NOT NULL,
+    
+    -- Ubicación y Geolocalización
+    ubicacion VARCHAR(255) NOT NULL,        
+    direccion_exacta VARCHAR(255) NOT NULL,    
+    latitud DECIMAL(10, 8) NULL,                
+    longitud DECIMAL(11, 8) NULL,                
+    
+    -- Tipo y Operación
+    tipo_inmueble_id INT NULL,
+    tipo_operacion ENUM('venta', 'alquiler', 'ambos') NOT NULL DEFAULT 'venta',
+    
+    -- Precios y Divisa
+    precio DECIMAL(12, 2) NOT NULL,
+    moneda ENUM('USD', 'CRC', 'EUR') NOT NULL DEFAULT 'USD',
+    tipo_precio ENUM('fijo', 'negociable') NOT NULL DEFAULT 'fijo',
+    
+    -- Características Físicas
+    habitaciones TINYINT UNSIGNED NULL,
+    banos DECIMAL(3,1) UNSIGNED NULL,          
+    estacionamientos TINYINT UNSIGNED DEFAULT 0,
+    area_construida DECIMAL(10,2) UNSIGNED NULL, 
+    area_terreno DECIMAL(10,2) UNSIGNED NULL,    
+    
+    -- Contenido Multimedia
+    imagen_principal VARCHAR(500) NOT NULL,
+    url_video VARCHAR(500) NULL,                
+    
+    -- Control, Visibilidad, Creador y Estado
+    destacada BOOLEAN DEFAULT FALSE,          
+    activa BOOLEAN DEFAULT TRUE,                
+    creado_por VARCHAR(30) NULL, -- Guarda el ID del usuario admin/agente que creó la propiedad
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Claves Foráneas
+    FOREIGN KEY (tipo_inmueble_id) REFERENCES tipos_inmueble(id) ON DELETE SET NULL,
+    FOREIGN KEY (creado_por) REFERENCES usuarios_admin(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- 5. GALERÍA DE IMÁGENES
+CREATE TABLE IF NOT EXISTS imagenes_propiedad (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    propiedad_id INT NOT NULL,
+    url_imagen VARCHAR(500) NOT NULL,
+    orden INT DEFAULT 0,                        
+    FOREIGN KEY (propiedad_id) REFERENCES propiedades(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 6. MENSAJES DE CONTACTO
+CREATE TABLE IF NOT EXISTS mensajes_contacto (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    propiedad_id INT NULL,
+    nombre_cliente VARCHAR(100) NOT NULL,
+    email_cliente VARCHAR(150) NOT NULL,
+    telefono_cliente VARCHAR(30) NULL,
+    mensaje TEXT NOT NULL,
+    estado ENUM('nuevo', 'en_proceso', 'atendido', 'descartado') DEFAULT 'nuevo',
+    fecha_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (propiedad_id) REFERENCES propiedades(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- 7. ÍNDICES DE RENDIMIENTO
+CREATE INDEX idx_propiedades_estado ON propiedades(activa, destacada, tipo_operacion);
+CREATE INDEX idx_propiedades_precio ON propiedades(moneda, precio);
+CREATE INDEX idx_propiedades_ubicacion ON propiedades(ubicacion);
+CREATE INDEX idx_propiedades_tipo ON propiedades(tipo_inmueble_id);
+CREATE INDEX idx_propiedades_creador ON propiedades(creado_por);
+CREATE INDEX idx_imagenes_orden ON imagenes_propiedad(propiedad_id, orden);
+
+-- 8. DATOS INICIALES
+INSERT IGNORE INTO tipos_inmueble (nombre) VALUES
+('Casa'),
+('Apartamento'),
+('Condominio'),
+('Terreno / Lote'),
+('Oficina'),
+('Local Comercial'),
+('Bodega / Nave Industrial'),
+('Finca / Quinta');

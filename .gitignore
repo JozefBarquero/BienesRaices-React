@@ -1,0 +1,55 @@
+# 1. Dependencias y Caché de Node.js / Vite
+node_modules/
+**/node_modules/
+.npm
+.vite/
+.vite-temp/
+**/dist/
+**/build/
+
+
+# 2. Archivos de Configuración y Secretos (.env)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+**/.env
+!**/.env.example
+
+
+# 3. Archivos Subidos por Usuarios (Backend Uploads)
+Backend/uploads/*
+!Backend/uploads/.gitkeep
+
+
+# 4. Logs y Archivos Temporales
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+temp.txt
+
+
+# 5. Configuración de Editores e IDEs (VS Code)
+.vscode/
+!.vscode/extensions.json
+*.code-workspace
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 6. Archivos del Sistema Operativo
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
