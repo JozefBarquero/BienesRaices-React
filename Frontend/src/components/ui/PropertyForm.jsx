@@ -8,20 +8,14 @@ import FeaturesSection from '@/components/Admin/PropertyForm/FeaturesSection';
 import DescriptionsSection from '@/components/Admin/PropertyForm/DescriptionsSection';
 import MultimediaSection from '@/components/Admin/PropertyForm/MultimediaSection';
 
-
-
-
 export default function PropertyForm({ initialData, onSubmit, onCancel }) {
-
-
     const {
-
-
         formData,
         provincias,
         cantones,
         distritos,
         tiposInmueble,
+        propietarios,
         previewUrl,
         secondaryPreviewUrls,
         handleChange,
@@ -34,19 +28,19 @@ export default function PropertyForm({ initialData, onSubmit, onCancel }) {
         handleSubmit
     } = usePropertyForm(initialData, onSubmit);
 
-
-
     return (
-
-
         <form onSubmit={handleSubmit}>
-
-
             <StatusSection formData={formData} onChange={handleCheckboxChange} />
-            <BasicInfoSection formData={formData} tipos={tiposInmueble} onChange={handleChange} />
+
+            <BasicInfoSection
+                formData={formData}
+                tipos={tiposInmueble}
+                propietarios={propietarios}
+                onChange={handleChange}
+            />
+
             <PricingSection formData={formData} onChange={handleChange} />
-            
-            
+
             <LocationSection
                 formData={formData}
                 provincias={provincias}
@@ -56,11 +50,9 @@ export default function PropertyForm({ initialData, onSubmit, onCancel }) {
                 onLocationSelect={handleLocationSelect}
             />
 
-
             <FeaturesSection formData={formData} onChange={handleChange} />
             <DescriptionsSection formData={formData} onChange={handleChange} />
-            
-            
+
             <MultimediaSection
                 formData={formData}
                 previewUrl={previewUrl}
@@ -73,23 +65,14 @@ export default function PropertyForm({ initialData, onSubmit, onCancel }) {
                 isNew={!initialData}
             />
 
-
-
             <div className="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-
                 <button type="button" onClick={onCancel} className="btn btn-secondary px-4">
                     Cancelar
                 </button>
-                
                 <button type="submit" className="btn btn-primary px-4 fw-semibold">
                     Guardar Propiedad
                 </button>
-
             </div>
-
-
         </form>
-
-
     );
 }

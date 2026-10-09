@@ -1,9 +1,9 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
 import db from '../config/db.js';
 import transporter from '../config/mailer.js';
+import { emailNuevoMensajePropiedad } from '../templates/emailTemplates.js';
+import { contactLimiter } from '../middlewares/rateLimiters.js';
 import { verifyToken } from './auth.js';
-import 'dotenv/config';
 
 const router = express.Router();
 
@@ -14,74 +14,176 @@ const verifyAdmin = (req, res, next) => {
     next();
 };
 
-router.use(verifyToken, verifyAdmin);
-
-router.get('/', async (req, res) => {
+const notificarCreadorPropiedad = async ({ propiedadId, clienteNombre, clienteEmail, clienteTelefono, mensaje }) => {
     try {
-        const [users] = await db.query(
-            'SELECT id, nombre, apellidos, email, rol, activo, fecha_contratacion, fecha_fin_contratacion, creado_en FROM usuarios_admin ORDER BY creado_en DESC'
+        const [rows] = await db.query(
+            `SELECT p.titulo AS propiedad_titulo,
+                    t.email AS creador_email,
+                    pe.nombre AS creador_nombre,
+                    pe.apellidos AS creador_apellidos
+             FROM propiedades p
+             INNER JOIN trabajadores t ON p.creado_por = t.id
+             INNER JOIN personas pe ON t.persona_id = pe.id
+             WHERE p.id = ? AND t.activo = TRUE`,
+            [propiedadId]
         );
-        res.json(users);
+
+        if (rows.length === 0 || !rows[0].creador_email) return;
+
+        const row = rows[0];
+        const dashboardUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin/dashboard`;
+
+        const template = emailNuevoMensajePropiedad({
+            trabajadorNombre: `${row.creador_nombre} ${row.creador_apellidos || ''}`.trim(),
+            propiedadTitulo: row.propiedad_titulo,
+            propiedadId,
+            clienteNombre,
+            clienteEmail,
+            clienteTelefono,
+            mensaje,
+            dashboardUrl
+        });
+
+        await transporter.sendMail({
+            from: process.env.EMAIL_FROM,
+            to: row.creador_email,
+            subject: template.subject,
+            html: template.html
+        });
+    } catch (error) {
+        console.error('Error al notificar al creador de la propiedad:', error.message);
+    }
+};
+
+router.post('/', contactLimiter, async (req, res) => {
+    const { propiedad_id, nombre_cliente, email_cliente, telefono_cliente, mensaje, origen, prioridad } = req.body;
+
+    if (!nombre_cliente || !email_cliente || !mensaje) {
+        return res.status(400).json({ error: 'Nombre, correo y mensaje son obligatorios.' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email_cliente)) {
+        return res.status(400).json({ error: 'Correo electrónico inválido.' });
+    }
+    if (String(mensaje).length > 5000) {
+        return res.status(400).json({ error: 'El mensaje es demasiado largo.' });
+    }
+
+    try {
+        const [result] = await db.query(
+            `INSERT INTO mensajes_contacto
+             (propiedad_id, nombre_cliente, email_cliente, telefono_cliente, mensaje, origen, prioridad, estado, activo)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'nuevo', TRUE)`,
+            [
+                propiedad_id || null,
+                nombre_cliente,
+                email_cliente,
+                telefono_cliente || null,
+                mensaje,
+                origen || 'web',
+                prioridad || 'media'
+            ]
+        );
+
+        res.status(201).json({ success: true, id: result.insertId });
+
+        if (propiedad_id) {
+            notificarCreadorPropiedad({
+                propiedadId: propiedad_id,
+                clienteNombre: nombre_cliente,
+                clienteEmail: email_cliente,
+                clienteTelefono: telefono_cliente,
+                mensaje
+            });
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-router.post('/', async (req, res) => {
-    const { id, nombre, apellidos, email, rol, fecha_contratacion, fecha_fin_contratacion } = req.body;
+router.use(verifyToken, verifyAdmin);
+
+router.get('/', async (req, res) => {
     try {
-        await db.query(
-            'INSERT INTO usuarios_admin (id, nombre, apellidos, email, rol, activo, fecha_contratacion, fecha_fin_contratacion) VALUES (?, ?, ?, ?, ?, true, ?, ?)',
-            [id, nombre, apellidos, email, rol || 'agente_inmobiliario', fecha_contratacion, fecha_fin_contratacion || null]
+        const [rows] = await db.query(
+            `SELECT m.*, p.titulo AS propiedad_titulo,
+                    t.id AS asignado_id, pe.nombre AS asignado_nombre, pe.apellidos AS asignado_apellidos
+             FROM mensajes_contacto m
+             LEFT JOIN propiedades p ON m.propiedad_id = p.id
+             LEFT JOIN trabajadores t ON m.asignado_a = t.id
+             LEFT JOIN personas pe ON t.persona_id = pe.id
+             ORDER BY m.fecha_envio DESC`
         );
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
-        const token = jwt.sign({ email }, process.env.JWT_SECRET || 'secret', { expiresIn: '24h' });
-        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin/reset-password?token=${token}`;
-
-        await transporter.sendMail({
-            from: process.env.EMAIL_FROM,
-            to: email,
-            subject: 'Bienvenido a Bienes Raíces - Establece tu contraseña',
-            html: `
-                <h2>¡Bienvenido ${nombre} ${apellidos}!</h2>
-                <p>Tu cuenta ha sido creada exitosamente en el sistema de administración de Bienes Raíces.</p>
-                <p>Tu usuario (Cédula) es: <strong>${id}</strong></p>
-                <p>Para establecer tu contraseña y acceder al sistema, haz clic en el siguiente enlace:</p>
-                <a href="${resetLink}" style="display:inline-block;padding:12px 24px;background-color:#0d6efd;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;margin-top:15px;">Establecer Contraseña</a>
-            `
-        });
-
-        res.json({ success: true, message: 'Usuario creado y correo de bienvenida enviado' });
+router.get('/:id', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT m.*, p.titulo AS propiedad_titulo
+             FROM mensajes_contacto m
+             LEFT JOIN propiedades p ON m.propiedad_id = p.id
+             WHERE m.id = ?`,
+            [req.params.id]
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'Mensaje no encontrado' });
+        res.json(rows[0]);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
 router.put('/:id', async (req, res) => {
-    const { nombre, apellidos, email, rol, activo, fecha_contratacion, fecha_fin_contratacion } = req.body;
+    const { estado, asignado_a, notas_internas, prioridad, activo } = req.body;
     const { id } = req.params;
-    
+
     try {
         await db.query(
-            'UPDATE usuarios_admin SET nombre = ?, apellidos = ?, email = ?, rol = ?, activo = ?, fecha_contratacion = ?, fecha_fin_contratacion = ? WHERE id = ?',
-            [nombre, apellidos, email, rol, activo !== undefined ? activo : true, fecha_contratacion, fecha_fin_contratacion || null, id]
+            `UPDATE mensajes_contacto
+             SET estado = COALESCE(?, estado),
+                 asignado_a = ?,
+                 notas_internas = COALESCE(?, notas_internas),
+                 prioridad = COALESCE(?, prioridad),
+                 activo = COALESCE(?, activo)
+             WHERE id = ?`,
+            [
+                estado || null,
+                asignado_a || null,
+                notas_internas || null,
+                prioridad || null,
+                activo !== undefined ? activo : null,
+                id
+            ]
         );
-        res.json({ success: true, message: 'Usuario actualizado' });
+        res.json({ success: true, message: 'Mensaje actualizado' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.post('/:id/contacto', async (req, res) => {
+    try {
+        await db.query(
+            `UPDATE mensajes_contacto
+             SET fecha_ultimo_contacto = CURRENT_TIMESTAMP,
+                 intentos_contacto = intentos_contacto + 1,
+                 estado = CASE WHEN estado = 'nuevo' THEN 'en_proceso' ELSE estado END
+             WHERE id = ?`,
+            [req.params.id]
+        );
+        res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
 router.delete('/:id', async (req, res) => {
-    const { id } = req.params;
-    
-    if (String(id) === String(req.user.id)) {
-        return res.status(400).json({ error: 'No puedes desactivar tu propia cuenta.' });
-    }
-    
     try {
-        await db.query('UPDATE usuarios_admin SET activo = FALSE WHERE id = ?', [id]);
-        res.json({ success: true, message: 'Usuario desactivado' });
+        const [result] = await db.query('UPDATE mensajes_contacto SET activo = FALSE WHERE id = ?', [req.params.id]);
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Mensaje no encontrado' });
+        res.json({ success: true, message: 'Mensaje desactivado' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

@@ -161,7 +161,7 @@ export const PropertyAiSummary = ({ propertyId, lat, lng, type, operation }) => 
 
               <span>Max: {summary.stats?.maxTempAvg}°C</span>
               <span>Min: {summary.stats?.minTempAvg}°C</span>
-              <span>Lluvia acumulada: {summary.stats?.totalRain} mm</span>
+              <span>Lluvia: {summary.stats?.totalRain} mm</span>
 
 
             </div>

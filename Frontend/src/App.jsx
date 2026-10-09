@@ -1,21 +1,25 @@
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
+import { CurrencyProvider } from '@/context/CurrencyContext';
+import { ToastProvider } from '@/components/ui/Toast';
+import { ConfirmDialogProvider } from '@/components/ui/ConfirmDialog';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import AppRoutes from '@/routes/AppRoutes';
-import { CurrencyProvider } from '@/context/CurrencyContext';
 
 export default function App() {
     return (
-        <Router>
+        <BrowserRouter>
             <CurrencyProvider>
-                <div className="d-flex flex-column min-vh-100">
-                    <Header />
-                    <main className="flex-grow-1">
-                        <AppRoutes />
-                    </main>
-                    <Footer />
-                </div>
+                <ToastProvider>
+                    <ConfirmDialogProvider>
+                        <div className="d-flex flex-column min-vh-100">
+                            <Header />
+                            <AppRoutes />
+                            <Footer />
+                        </div>
+                    </ConfirmDialogProvider>
+                </ToastProvider>
             </CurrencyProvider>
-        </Router>
+        </BrowserRouter>
     );
 }

@@ -1,19 +1,11 @@
 import React from 'react';
+import PropietarioSelect from './PropietarioSelect';
 
-
-
-export default function BasicInfoSection({ formData, tipos, onChange }) {
-
-
+export default function BasicInfoSection({ formData, tipos, propietarios = [], onChange }) {
 
     return (
-
-
         <div className="mb-4">
-
-
             <h4 className="fw-bold text-primary mb-3">Información Básica</h4>
-
 
             <div className="row g-3">
                 <div className="col-12">
@@ -28,8 +20,7 @@ export default function BasicInfoSection({ formData, tipos, onChange }) {
                     />
                 </div>
 
-                
-                <div className="col-md-6">
+                <div className="col-md-4">
                     <label className="form-label fw-semibold">Tipo de Inmueble:</label>
                     <select
                         name="tipo_inmueble_id"
@@ -47,10 +38,7 @@ export default function BasicInfoSection({ formData, tipos, onChange }) {
                     </select>
                 </div>
 
-
-
-                <div className="col-md-6">
-
+                <div className="col-md-4">
                     <label className="form-label fw-semibold">Tipo de Operación:</label>
                     <select
                         name="tipo_operacion"
@@ -62,11 +50,18 @@ export default function BasicInfoSection({ formData, tipos, onChange }) {
                         <option value="alquiler">Alquiler</option>
                         <option value="ambos">Ambos</option>
                     </select>
-
                 </div>
 
+                <div className="col-md-4">
+                    <label className="form-label fw-semibold">Propietario:</label>
+                    <PropietarioSelect
+                        propietarios={propietarios}
+                        value={formData.propietario_id || ''}
+                        onChange={onChange}
+                        name="propietario_id"
+                    />
+                </div>
             </div>
-            
         </div>
     );
 }

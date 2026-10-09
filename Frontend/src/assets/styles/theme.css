@@ -1,89 +1,81 @@
+@import url('/fonts/plus-jakarta-sans/fonts.css');
+
 :root {
+  --bs-body-bg: #f4f5f7;
+  --bs-tertiary-bg: #ffffff;
+
+  --bs-body-color: #4a5568; 
+  --bs-heading-color: #0f2c59; 
+  --bs-secondary-color: #64748b;
 
   --bs-primary: #0f2c59;
   --bs-primary-rgb: 15, 44, 89;
   --bs-secondary: #4a5568;
   --bs-secondary-rgb: 74, 85, 104;
   --bs-accent: #c59b27;
-  
+
+  --bs-body-font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 
-
-
 [data-bs-theme="dark"] {
+  --bs-body-bg: #0f172a;
+  --bs-tertiary-bg: #1e293b;
+
+  --bs-body-color: #cbd5e1;
+  --bs-heading-color: #f8fafc;
+  --bs-secondary-color: #94a3b8;
 
   --bs-primary: #3b82f6;
   --bs-primary-rgb: 59, 130, 246;
-  --bs-body-bg: #0f172a;
-  --bs-body-color: #f1f5f9;
-  --bs-tertiary-bg: #1e293b;
-
 }
 
+body {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
 
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+  color: var(--bs-heading-color);
+}
 
 [data-bs-theme="dark"] .icon-theme {
-
   filter: invert(1) brightness(2);
-
 }
-
-
 
 .text-accent {
-
   color: var(--bs-accent) !important;
-
 }
-
-
 
 .bg-accent {
-
   background-color: var(--bs-accent) !important;
-
+  color: #ffffff !important;
 }
 
-
-
 .img-cover {
-
   width: 100%;
   height: 100%;
   object-fit: cover;
-
 }
 
 .aspect-landscape {
-
   aspect-ratio: 16 / 9;
   overflow: hidden;
-
 }
 
 .transition-theme {
-
-
   transition: background-color 0.3s ease, color 0.3s ease;
-
 }
 
-.card {
-
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+.card, .franja {
   background-color: var(--bs-tertiary-bg);
-
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: none;
 }
 
 .card:hover {
-
   transform: translateY(-4px);
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-
 }
-
-
-/*Para el modal*/
 
 .modal-overlay {
     position: fixed;
@@ -91,8 +83,8 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(15, 23, 42, 0.65); /* Fondo oscuro semitransparente */
-    backdrop-filter: blur(8px); /* Blur de fondo moderno */
+    background-color: rgba(15, 23, 42, 0.65); 
+    backdrop-filter: blur(8px); 
     -webkit-backdrop-filter: blur(8px);
     display: flex;
     justify-content: center;
@@ -109,10 +101,10 @@
 }
 
 .modal-content {
-    background-color: var(--bs-tertiary-bg, #ffffff);
-    color: var(--bs-body-color, #1e293b);
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
     padding: 2.5rem 2.25rem;
-    border-radius: 1.25rem; /* Bordes suavemente redondeados */
+    border-radius: 1.25rem; 
     max-width: 440px;
     width: 90%;
     text-align: center;
@@ -128,7 +120,6 @@
 .modal-overlay.show .modal-content {
     transform: scale(1) translateY(0);
 }
-
 
 .modal-icon-badge {
     width: 3.5rem;
@@ -152,12 +143,11 @@
     color: var(--bs-primary);
 }
 
-
 .modal-content .title-tertiary {
     font-size: 1.35rem;
     font-weight: 700;
     margin: 0 0 0.75rem 0;
-    color: inherit;
+    color: var(--bs-heading-color);
 }
 
 .modal-content p.text-body {
@@ -166,7 +156,6 @@
     opacity: 0.85;
     margin: 0 0 1.75rem 0;
 }
-
 
 .modal-btn-primary {
     width: 100%;

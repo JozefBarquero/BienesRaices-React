@@ -9,6 +9,10 @@ import AdminLoginPage from '@/pages/Admin/AdminLoginPage';
 import ResetPasswordPage from '@/pages/Admin/ResetPasswordPage';
 import AdminDashboardPage from '@/pages/Admin/AdminDashboardPage';
 import ProtectedRoute from '@/routes/ProtectedRoute';
+import NotFound from '@/pages/NotFound'
+import Privacidad from '@/pages/Privacidad';
+import Terminos from '@/pages/Terminos';
+
 
 export default function AppRoutes() {
     return (
@@ -31,6 +35,11 @@ export default function AppRoutes() {
                     </ProtectedRoute>
                 }
             />
+            <Route path="*" element={<NotFound />} />
+
+            <Route path="/privacidad" element={<Privacidad />} />
+            <Route path="/terminos" element={<Terminos />} />
+
         </Routes>
     );
 }

@@ -13,21 +13,30 @@ export default function usePropertyForm(initialData, onSubmit) {
         moneda: 'USD', tipo_precio: 'fijo', habitaciones: '',
         banos: '', estacionamientos: '0', area_construida: '',
         area_terreno: '', url_video: '', url_tour_360: '',
-        destacada: false, activa: true
+        destacada: false, activa: true, propietario_id: ''
     });
 
     const [provincias] = useState(ObjectKeys(DATOS_UBICACION));
     const [cantones, setCantones] = useState([]);
     const [distritos, setDistritos] = useState([]);
     const [tiposInmueble, setTiposInmueble] = useState([]);
+    const [propietarios, setPropietarios] = useState([]);
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState('');
     const [secondaryItems, setSecondaryItems] = useState([]);
 
     useEffect(() => {
         const fetchInicial = async () => {
-            const tipos = await api.diccionarios.getTiposInmueble();
-            setTiposInmueble(tipos);
+            try {
+                const [tipos, props] = await Promise.all([
+                    api.diccionarios.getTiposInmueble(),
+                    api.propietarios.getActivos()
+                ]);
+                setTiposInmueble(tipos);
+                setPropietarios(props);
+            } catch (err) {
+                console.error(err);
+            }
         };
         fetchInicial();
     }, []);
@@ -68,7 +77,8 @@ export default function usePropertyForm(initialData, onSubmit) {
                 tipo_precio: initialData.tipo_precio || 'fijo',
                 estacionamientos: initialData.estacionamientos || '0',
                 destacada: initialData.destacada === 1 || initialData.destacada === true,
-                activa: initialData.activa !== undefined ? Boolean(initialData.activa) : true
+                activa: initialData.activa !== undefined ? Boolean(initialData.activa) : true,
+                propietario_id: initialData.propietario_id || ''
             });
 
             if (initialData.imagen_principal) {
@@ -176,7 +186,7 @@ export default function usePropertyForm(initialData, onSubmit) {
     };
 
     return {
-        formData, provincias, cantones, distritos, tiposInmueble,
+        formData, provincias, cantones, distritos, tiposInmueble, propietarios,
         previewUrl, secondaryPreviewUrls: secondaryItems,
         handleChange, handleLocationSelect, handleCheckboxChange, handleFileChange,
         handleSecondaryFilesChange, handleRemoveSecondaryImage,

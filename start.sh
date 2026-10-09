@@ -18,6 +18,6 @@ echo -e "Backend - Frontend\n"
 
 (cd "$DIR/Backend" && npm start 2>&1 | sed -u "s/^/$(echo -e "${CYAN}[BACKEND]${RESET} ")/") &
 
-(cd "$DIR/BienesRaices-React" && npm run dev 2>&1 | sed -u "s/^/$(echo -e "${GREEN}[FRONTEND]${RESET} ")/") &
+(cd "$DIR/Frontend" && npm run dev 2>&1 | sed -u "s/^/$(echo -e "${GREEN}[FRONTEND]${RESET} ")/") &
 
 wait

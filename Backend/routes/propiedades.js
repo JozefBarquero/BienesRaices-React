@@ -10,9 +10,16 @@ router.get('/', async (req, res) => {
         const [rows] = await db.query(`
             SELECT p.*,
                    ti.nombre AS tipo_inmueble_texto,
+                   prop.id AS propietario_ref_id,
+                   per.nombre AS propietario_nombre,
+                   per.apellidos AS propietario_apellidos,
+                   per.razon_social AS propietario_razon_social,
+                   per.documento_identidad AS propietario_documento,
                    JSON_ARRAYAGG(i.url_imagen) AS imagenes_secundarias
             FROM propiedades p
             LEFT JOIN tipos_inmueble ti ON p.tipo_inmueble_id = ti.id
+            LEFT JOIN propietarios prop ON p.propietario_id = prop.id
+            LEFT JOIN personas per ON prop.persona_id = per.id
             LEFT JOIN imagenes_propiedad i ON p.id = i.propiedad_id
             GROUP BY p.id
         `);
@@ -32,9 +39,16 @@ router.get('/:id', async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT p.*,
-                   ti.nombre AS tipo_inmueble_texto
+                   ti.nombre AS tipo_inmueble_texto,
+                   prop.id AS propietario_ref_id,
+                   per.nombre AS propietario_nombre,
+                   per.apellidos AS propietario_apellidos,
+                   per.razon_social AS propietario_razon_social,
+                   per.documento_identidad AS propietario_documento
             FROM propiedades p
             LEFT JOIN tipos_inmueble ti ON p.tipo_inmueble_id = ti.id
+            LEFT JOIN propietarios prop ON p.propietario_id = prop.id
+            LEFT JOIN personas per ON prop.persona_id = per.id
             WHERE p.id = ?
         `, [req.params.id]);
 
@@ -80,15 +94,17 @@ router.post('/', verifyToken, (req, res, next) => {
              (titulo, descripcion_corta, descripcion_larga, ubicacion, direccion_exacta, latitud, longitud, 
               tipo_inmueble_id, tipo_operacion, precio, moneda, tipo_precio, habitaciones, banos, 
               estacionamientos, area_construida, area_terreno, imagen_principal, url_video, 
-              destacada, activa, creado_por)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              destacada, activa, creado_por, propietario_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.titulo, data.descripcion_corta, data.descripcion_larga, data.ubicacion, data.direccion_exacta,
                 data.latitud || null, data.longitud || null, data.tipo_inmueble_id || null, data.tipo_operacion || 'venta',
                 data.precio, data.moneda || 'USD', data.tipo_precio || 'fijo', data.habitaciones || null, data.banos || null,
                 data.estacionamientos || 0, data.area_construida || null, data.area_terreno || null, imagen_principal,
                 data.url_video || null, data.destacada === 'true' ? 1 : 0,
-                data.activa === 'true' || data.activa === true ? 1 : 0, data.creado_por || null
+                data.activa === 'true' || data.activa === true ? 1 : 0,
+                data.creado_por || req.user.id || null,
+                data.propietario_id || null
             ]
         );
 
@@ -97,7 +113,7 @@ router.post('/', verifyToken, (req, res, next) => {
         if (data.orden_galeria) {
             const ordenGaleria = JSON.parse(data.orden_galeria);
             let newFileIndex = 0;
-            
+
             for (let i = 0; i < ordenGaleria.length; i++) {
                 const item = ordenGaleria[i];
 
@@ -149,7 +165,7 @@ router.put('/:id', verifyToken, (req, res, next) => {
         await conexion.beginTransaction();
 
         const [propiedadActual] = await conexion.query('SELECT imagen_principal FROM propiedades WHERE id = ?', [id]);
-       
+
         if (propiedadActual.length === 0) {
             await conexion.rollback();
             return res.status(404).json({ error: 'Propiedad no encontrada' });
@@ -166,7 +182,7 @@ router.put('/:id', verifyToken, (req, res, next) => {
              SET titulo=?, descripcion_corta=?, descripcion_larga=?, ubicacion=?, direccion_exacta=?, 
                  latitud=?, longitud=?, tipo_inmueble_id=?, tipo_operacion=?, precio=?, moneda=?, 
                  tipo_precio=?, habitaciones=?, banos=?, estacionamientos=?, area_construida=?, 
-                 area_terreno=?, imagen_principal=?, url_video=?, destacada=?, activa=?
+                 area_terreno=?, imagen_principal=?, url_video=?, destacada=?, activa=?, propietario_id=?
              WHERE id=?`,
             [
                 data.titulo, data.descripcion_corta, data.descripcion_larga, data.ubicacion, data.direccion_exacta,
@@ -174,7 +190,9 @@ router.put('/:id', verifyToken, (req, res, next) => {
                 data.precio, data.moneda, data.tipo_precio, data.habitaciones || null, data.banos || null,
                 data.estacionamientos || 0, data.area_construida || null, data.area_terreno || null, imagen_principal,
                 data.url_video || null, data.destacada === 'true' ? 1 : 0,
-                data.activa === 'true' || data.activa === true ? 1 : 0, id
+                data.activa === 'true' || data.activa === true ? 1 : 0,
+                data.propietario_id || null,
+                id
             ]
         );
 
@@ -182,11 +200,11 @@ router.put('/:id', verifyToken, (req, res, next) => {
             await conexion.query('DELETE FROM imagenes_propiedad WHERE propiedad_id = ?', [id]);
             const ordenGaleria = JSON.parse(data.orden_galeria);
             let newFileIndex = 0;
-            
+
             for (let i = 0; i < ordenGaleria.length; i++) {
                 const item = ordenGaleria[i];
                 let urlImagen = null;
-                
+
                 if (item.type === 'existente') {
                     urlImagen = item.url;
                 } else if (item.type === 'nueva' && req.files && req.files['imagenes_secundarias']) {
@@ -195,7 +213,7 @@ router.put('/:id', verifyToken, (req, res, next) => {
                         urlImagen = await procesarYGuardarImagen(file.buffer, 'imagenes_secundarias');
                     }
                 }
-                
+
                 if (urlImagen) {
                     await conexion.query(
                         `INSERT INTO imagenes_propiedad (propiedad_id, url_imagen, orden) VALUES (?, ?, ?)`,
@@ -234,5 +252,21 @@ router.delete('/:id', verifyToken, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
+router.patch('/:id/estado', verifyToken, async (req, res) => {
+    const { activa } = req.body;
+    if (typeof activa !== 'boolean') {
+        return res.status(400).json({ error: 'El campo activa debe ser un booleano.' });
+    }
+    try {
+        const [result] = await db.query('UPDATE propiedades SET activa = ? WHERE id = ?', [activa, req.params.id]);
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Propiedad no encontrada' });
+        res.json({ success: true, activa });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 export default router;

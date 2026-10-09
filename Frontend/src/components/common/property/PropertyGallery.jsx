@@ -2,40 +2,20 @@ import { useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import Lightbox from 'yet-another-react-lightbox';
-
-
-
-
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'yet-another-react-lightbox/styles.css';
 
-
-
-
 export default function PropertyGallery({ title, image, gallery = [] }) {
-
-
     const [indexLightbox, setIndexLightbox] = useState(-1);
     const hasMultiple = gallery && gallery.length > 1;
 
-
-
     return (
-
-
         <>
             <div className="mb-4">
-
-
                 {hasMultiple ? (
-
-
-                    <div className="ratio ratio-16x9 rounded-4 shadow-sm overflow-hidden">
-
-
-
+                    <div className="ratio ratio-21x9 rounded-4 shadow-sm overflow-hidden">
                         <Swiper
                             modules={[Navigation, Pagination, Autoplay]}
                             navigation
@@ -59,16 +39,9 @@ export default function PropertyGallery({ title, image, gallery = [] }) {
                                 </SwiperSlide>
                             ))}
                         </Swiper>
-
-
                     </div>
-
-
-
                 ) : (
-                    <div className="ratio ratio-16x9 rounded-4 shadow-sm overflow-hidden">
-
-
+                    <div className="ratio ratio-21x9 rounded-4 shadow-sm overflow-hidden">
                         <img
                             src={image}
                             alt={title}
@@ -77,12 +50,8 @@ export default function PropertyGallery({ title, image, gallery = [] }) {
                             onClick={() => setIndexLightbox(0)}
                         />
                     </div>
-
-
                 )}
             </div>
-
-
 
             <Lightbox
                 open={indexLightbox >= 0}

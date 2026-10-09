@@ -67,10 +67,20 @@ export default function Header() {
 
                     <Link 
                         to="/" 
-                        className="navbar-brand fw-bold text-primary text-truncate flex-shrink-1 me-2 my-0"
-                        style={{ fontSize: 'clamp(0.95rem, 3.8vw, 1.25rem)' }}
+                        className="navbar-brand fw-bold me-2 my-0"
                     >
-                        Bienes Raíces Horquetas
+                        <div className="d-lg-none lh-sm" style={{ maxWidth: '210px' }}>
+                            <span className="d-block text-body-secondary text-uppercase fw-normal" style={{ fontSize: '0.6rem', letterSpacing: '0.5px' }}>
+                                Bienes Raíces
+                            </span>
+                            <span className="d-block text-wrap" style={{ fontSize: '0.9rem', lineHeight: '1.15' }}>
+                                Las Horquetas de Sarapiquí
+                            </span>
+                        </div>
+                        
+                        <span className="d-none d-lg-inline fs-5">
+                            Bienes Raíces Las Horquetas de Sarapiquí
+                        </span>
                     </Link>
 
 
