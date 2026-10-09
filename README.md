@@ -191,7 +191,7 @@ Acceda en el navegador a `http://localhost:5173`.
 ### Ejecutar Pruebas Automatizadas (Testing)
 
 ```bash
-npm test
+npm run test
 ```
 
 Este comando ejecutará el suite completo de Vitest (`vitest run`) y mostrará el estado de aprobación de las pruebas en la terminal.
