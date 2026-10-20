@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { api } from '@/services/api';
 import { toast } from '@/components/ui/Toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
+import { LiquidGlassPanel, LiquidGlassButton } from '@/components/ui/LiquidGlass';
 import SearchFilterBar from './SearchFilterBar';
 
 const FORM_INICIAL = {
@@ -15,20 +16,20 @@ const FORM_INICIAL = {
     telefono: '',
     direccion: '',
     notas: '',
-    activo: true
+    activo: true,
 };
 
 const TIPOS_DOCUMENTO = [
     { value: 'cedula', label: 'Cédula' },
     { value: 'pasaporte', label: 'Pasaporte' },
     { value: 'ruc', label: 'RUC' },
-    { value: 'otro', label: 'Otro' }
+    { value: 'otro', label: 'Otro' },
 ];
 
 const FILTROS = [
     { value: 'todos', label: 'Todos' },
     { value: 'activos', label: 'Solo activos' },
-    { value: 'inactivos', label: 'Solo inactivos' }
+    { value: 'inactivos', label: 'Solo inactivos' },
 ];
 
 const normalizar = (str) =>
@@ -77,7 +78,7 @@ export default function PropietariosAdmin() {
                 p.apellidos,
                 p.razon_social,
                 p.email,
-                p.telefono
+                p.telefono,
             ].map(normalizar).join(' ');
 
             const coincideTexto = campos.includes(q);
@@ -107,7 +108,7 @@ export default function PropietariosAdmin() {
             telefono: p.telefono || '',
             direccion: p.direccion || '',
             notas: p.notas || '',
-            activo: p.activo !== undefined ? Boolean(p.activo) : true
+            activo: p.activo !== undefined ? Boolean(p.activo) : true,
         });
         setEditing(p);
         setError('');
@@ -121,7 +122,7 @@ export default function PropietariosAdmin() {
             title: `${nuevoEstado ? 'Activar' : 'Desactivar'} propietario`,
             message: `¿Seguro que deseas ${accion} este propietario?`,
             confirmText: nuevoEstado ? 'Activar' : 'Desactivar',
-            variant: nuevoEstado ? 'primary' : 'danger'
+            variant: nuevoEstado ? 'primary' : 'danger',
         });
         if (!confirmed) return;
         try {
@@ -137,7 +138,7 @@ export default function PropietariosAdmin() {
                     telefono: p.telefono || '',
                     direccion: p.direccion || '',
                     notas: p.notas || '',
-                    activo: true
+                    activo: true,
                 };
                 await api.propietarios.update(p.id, payload);
                 toast.success('Propietario activado con éxito.');
@@ -153,7 +154,7 @@ export default function PropietariosAdmin() {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e) => {
@@ -193,40 +194,55 @@ export default function PropietariosAdmin() {
 
     if (loading) {
         return (
-            <div className="d-flex align-items-center gap-3 text-secondary py-5">
-                <div className="spinner-border text-primary" role="status"></div>
-                <span className="fs-5">Cargando propietarios...</span>
+            <div className="admin-loading">
+                <span className="admin-spinner" aria-hidden="true" />
+                <span>Cargando propietarios...</span>
             </div>
         );
     }
 
     if (showForm) {
         return (
-            <div className="card border-0 shadow-sm p-4 rounded-4">
-                <h3 className="fw-bold mb-4">{editing ? 'Editar Propietario' : 'Nuevo Propietario'}</h3>
+            <LiquidGlassPanel liquid className="admin-panel">
+                <h3 className="admin-panel-title">
+                    {editing ? 'Editar Propietario' : 'Nuevo Propietario'}
+                </h3>
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} className="lg-form">
                     <div className="row">
                         <div className="col-md-6 mb-3">
-                            <label className="form-label fw-semibold">Tipo de Persona</label>
-                            <select name="tipo_persona" className="form-select" value={formData.tipo_persona} onChange={handleChange}>
+                            <label className="form-label" htmlFor="prop-tipo-persona">Tipo de Persona</label>
+                            <select
+                                id="prop-tipo-persona"
+                                name="tipo_persona"
+                                className="form-select"
+                                value={formData.tipo_persona}
+                                onChange={handleChange}
+                            >
                                 <option value="fisica">Persona Física</option>
                                 <option value="juridica">Persona Jurídica</option>
                             </select>
                         </div>
 
                         <div className="col-md-6 mb-3">
-                            <label className="form-label fw-semibold">Tipo de Documento</label>
-                            <select name="tipo_documento" className="form-select" value={formData.tipo_documento} onChange={handleChange}>
-                                {TIPOS_DOCUMENTO.map(t => (
+                            <label className="form-label" htmlFor="prop-tipo-doc">Tipo de Documento</label>
+                            <select
+                                id="prop-tipo-doc"
+                                name="tipo_documento"
+                                className="form-select"
+                                value={formData.tipo_documento}
+                                onChange={handleChange}
+                            >
+                                {TIPOS_DOCUMENTO.map((t) => (
                                     <option key={t.value} value={t.value}>{t.label}</option>
                                 ))}
                             </select>
                         </div>
 
                         <div className="col-md-12 mb-3">
-                            <label className="form-label fw-semibold">Documento de Identidad</label>
+                            <label className="form-label" htmlFor="prop-doc">Documento de Identidad</label>
                             <input
+                                id="prop-doc"
                                 type="text"
                                 name="documento_identidad"
                                 className="form-control"
@@ -239,70 +255,131 @@ export default function PropietariosAdmin() {
                         {formData.tipo_persona === 'fisica' ? (
                             <>
                                 <div className="col-md-6 mb-3">
-                                    <label className="form-label fw-semibold">Nombre</label>
-                                    <input type="text" name="nombre" className="form-control" value={formData.nombre} onChange={handleChange} required />
+                                    <label className="form-label" htmlFor="prop-nombre">Nombre</label>
+                                    <input
+                                        id="prop-nombre"
+                                        type="text"
+                                        name="nombre"
+                                        className="form-control"
+                                        value={formData.nombre}
+                                        onChange={handleChange}
+                                        required
+                                    />
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="form-label fw-semibold">Apellidos</label>
-                                    <input type="text" name="apellidos" className="form-control" value={formData.apellidos} onChange={handleChange} required />
+                                    <label className="form-label" htmlFor="prop-apellidos">Apellidos</label>
+                                    <input
+                                        id="prop-apellidos"
+                                        type="text"
+                                        name="apellidos"
+                                        className="form-control"
+                                        value={formData.apellidos}
+                                        onChange={handleChange}
+                                        required
+                                    />
                                 </div>
                             </>
                         ) : (
                             <div className="col-md-12 mb-3">
-                                <label className="form-label fw-semibold">Razón Social</label>
-                                <input type="text" name="razon_social" className="form-control" value={formData.razon_social} onChange={handleChange} required />
+                                <label className="form-label" htmlFor="prop-razon">Razón Social</label>
+                                <input
+                                    id="prop-razon"
+                                    type="text"
+                                    name="razon_social"
+                                    className="form-control"
+                                    value={formData.razon_social}
+                                    onChange={handleChange}
+                                    required
+                                />
                             </div>
                         )}
 
                         <div className="col-md-6 mb-3">
-                            <label className="form-label fw-semibold">Email</label>
-                            <input type="email" name="email" className="form-control" value={formData.email} onChange={handleChange} />
+                            <label className="form-label" htmlFor="prop-email">Email</label>
+                            <input
+                                id="prop-email"
+                                type="email"
+                                name="email"
+                                className="form-control"
+                                value={formData.email}
+                                onChange={handleChange}
+                            />
                         </div>
                         <div className="col-md-6 mb-3">
-                            <label className="form-label fw-semibold">Teléfono</label>
-                            <input type="text" name="telefono" className="form-control" value={formData.telefono} onChange={handleChange} />
+                            <label className="form-label" htmlFor="prop-tel">Teléfono</label>
+                            <input
+                                id="prop-tel"
+                                type="text"
+                                name="telefono"
+                                className="form-control"
+                                value={formData.telefono}
+                                onChange={handleChange}
+                            />
                         </div>
 
                         <div className="col-md-12 mb-3">
-                            <label className="form-label fw-semibold">Dirección</label>
-                            <input type="text" name="direccion" className="form-control" value={formData.direccion} onChange={handleChange} />
+                            <label className="form-label" htmlFor="prop-dir">Dirección</label>
+                            <input
+                                id="prop-dir"
+                                type="text"
+                                name="direccion"
+                                className="form-control"
+                                value={formData.direccion}
+                                onChange={handleChange}
+                            />
                         </div>
 
                         <div className="col-md-12 mb-3">
-                            <label className="form-label fw-semibold">Notas Internas</label>
-                            <textarea name="notas" className="form-control" rows="3" value={formData.notas} onChange={handleChange} />
+                            <label className="form-label" htmlFor="prop-notas">Notas Internas</label>
+                            <textarea
+                                id="prop-notas"
+                                name="notas"
+                                className="form-control"
+                                rows="3"
+                                value={formData.notas}
+                                onChange={handleChange}
+                            />
                         </div>
 
                         {editing && (
                             <div className="col-md-12 mb-3">
-                                <div className="form-check">
+                                <label className="admin-switch">
                                     <input
                                         type="checkbox"
-                                        className="form-check-input"
-                                        id="propietarioActivo"
                                         checked={formData.activo}
                                         onChange={(e) => setFormData({ ...formData, activo: e.target.checked })}
                                     />
-                                    <label className="form-check-label" htmlFor="propietarioActivo">Propietario Activo</label>
-                                </div>
+                                    <span className="admin-switch-label">Propietario Activo</span>
+                                </label>
                             </div>
                         )}
                     </div>
 
-                    {error && <div className="alert alert-danger py-2">{error}</div>}
+                    {error && <div className="admin-alert admin-alert--danger">{error}</div>}
 
-                    <div className="d-flex gap-2">
-                        <button type="submit" className="btn btn-primary flex-fill flex-md-grow-0">Guardar</button>
-                        <button type="button" className="btn btn-secondary flex-fill flex-md-grow-0" onClick={() => { setShowForm(false); setEditing(null); }}>Cancelar</button>
+                    <div className="admin-form-actions">
+                        <LiquidGlassButton type="submit" variant="primary">
+                            Guardar
+                        </LiquidGlassButton>
+                        <LiquidGlassButton
+                            variant="ghost"
+                            onClick={() => { setShowForm(false); setEditing(null); }}
+                        >
+                            Cancelar
+                        </LiquidGlassButton>
                     </div>
                 </form>
-            </div>
+            </LiquidGlassPanel>
         );
     }
 
     return (
-        <div className="mt-2">
-            <button onClick={handleAddNew} className="btn btn-primary mb-3 w-100 w-md-auto">+ Agregar Propietario</button>
+        <div>
+            <div className="admin-actions">
+                <LiquidGlassButton variant="primary" onClick={handleAddNew}>
+                    + Agregar Propietario
+                </LiquidGlassButton>
+            </div>
 
             <SearchFilterBar
                 search={busqueda}
@@ -314,14 +391,14 @@ export default function PropietariosAdmin() {
             />
 
             {propietariosFiltrados.length === 0 ? (
-                <div className="alert alert-info text-center py-4">
+                <div className="admin-empty">
                     No se encontraron propietarios con los filtros actuales.
                 </div>
             ) : (
                 <>
-                    <div className="table-responsive shadow-sm rounded-4 border overflow-hidden d-none d-md-block">
-                        <table className="table table-hover align-middle mb-0">
-                            <thead className="table-light">
+                    <div className="admin-table-wrap">
+                        <table className="admin-table">
+                            <thead>
                                 <tr>
                                     <th>Documento</th>
                                     <th>Nombre / Razón Social</th>
@@ -332,29 +409,51 @@ export default function PropietariosAdmin() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {propietariosFiltrados.map(p => (
+                                {propietariosFiltrados.map((p) => (
                                     <tr key={p.id}>
-                                        <td className="fw-semibold">{p.documento_identidad}</td>
-                                        <td className="fw-semibold">{nombreCompleto(p)}</td>
-                                        <td><span className="badge bg-secondary-subtle text-secondary border text-capitalize">{p.tipo_persona}</span></td>
-                                        <td className="small">
+                                        <td className="admin-cell-main">{p.documento_identidad}</td>
+                                        <td className="admin-cell-main">{nombreCompleto(p)}</td>
+                                        <td>
+                                            <span className="admin-badge admin-badge--neutral text-capitalize">
+                                                {p.tipo_persona}
+                                            </span>
+                                        </td>
+                                        <td className="admin-cell-sub">
                                             {p.email && <div>{p.email}</div>}
-                                            {p.telefono && <div className="text-muted">{p.telefono}</div>}
+                                            {p.telefono && <div>{p.telefono}</div>}
                                         </td>
                                         <td className="text-center">
                                             {p.activo ? (
-                                                <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Activo</span>
+                                                <span className="admin-badge admin-badge--success">Activo</span>
                                             ) : (
-                                                <span className="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Inactivo</span>
+                                                <span className="admin-badge admin-badge--danger">Inactivo</span>
                                             )}
                                         </td>
-                                        <td className="text-center">
-                                            <div className="d-flex justify-content-center gap-2">
-                                                <button onClick={() => handleEdit(p)} className="btn btn-sm btn-outline-primary">Editar</button>
+                                        <td>
+                                            <div className="admin-action-group">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleEdit(p)}
+                                                    className="admin-action-btn admin-action-btn--primary"
+                                                >
+                                                    Editar
+                                                </button>
                                                 {p.activo ? (
-                                                    <button onClick={() => handleToggleActive(p)} className="btn btn-sm btn-outline-danger">Desactivar</button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleToggleActive(p)}
+                                                        className="admin-action-btn admin-action-btn--danger"
+                                                    >
+                                                        Desactivar
+                                                    </button>
                                                 ) : (
-                                                    <button onClick={() => handleToggleActive(p)} className="btn btn-sm btn-outline-success">Activar</button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleToggleActive(p)}
+                                                        className="admin-action-btn admin-action-btn--success"
+                                                    >
+                                                        Activar
+                                                    </button>
                                                 )}
                                             </div>
                                         </td>
@@ -364,28 +463,46 @@ export default function PropietariosAdmin() {
                         </table>
                     </div>
 
-                    <div className="d-block d-md-none">
-                        {propietariosFiltrados.map(p => (
-                            <div key={p.id} className="card shadow-sm border rounded-3 mb-3 p-3">
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <span className="badge bg-light text-dark border">{p.documento_identidad}</span>
+                    <div className="admin-mobile-list">
+                        {propietariosFiltrados.map((p) => (
+                            <div key={p.id} className="admin-mobile-card lg lg--soft">
+                                <div className="admin-mobile-card-row">
+                                    <span className="admin-badge admin-badge--neutral">{p.documento_identidad}</span>
                                     {p.activo ? (
-                                        <span className="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Activo</span>
+                                        <span className="admin-badge admin-badge--success">Activo</span>
                                     ) : (
-                                        <span className="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Inactivo</span>
+                                        <span className="admin-badge admin-badge--danger">Inactivo</span>
                                     )}
                                 </div>
-                                <h5 className="fw-bold fs-6 mb-1">{nombreCompleto(p)}</h5>
-                                <p className="text-muted small mb-1 text-capitalize">{p.tipo_persona}</p>
-                                {p.email && <p className="text-muted small mb-1 text-break">{p.email}</p>}
-                                {p.telefono && <p className="text-muted small mb-2">{p.telefono}</p>}
+                                <h5 className="admin-mobile-card-title">{nombreCompleto(p)}</h5>
+                                <p className="admin-mobile-card-sub text-capitalize">{p.tipo_persona}</p>
+                                {p.email && <p className="admin-mobile-card-sub text-break">{p.email}</p>}
+                                {p.telefono && <p className="admin-mobile-card-sub">{p.telefono}</p>}
 
-                                <div className="d-flex gap-2 mt-2">
-                                    <button onClick={() => handleEdit(p)} className="btn btn-outline-primary btn-sm flex-fill">Editar</button>
+                                <div className="admin-mobile-card-actions">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleEdit(p)}
+                                        className="admin-action-btn admin-action-btn--primary"
+                                    >
+                                        Editar
+                                    </button>
                                     {p.activo ? (
-                                        <button onClick={() => handleToggleActive(p)} className="btn btn-outline-danger btn-sm flex-fill">Desactivar</button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleToggleActive(p)}
+                                            className="admin-action-btn admin-action-btn--danger"
+                                        >
+                                            Desactivar
+                                        </button>
                                     ) : (
-                                        <button onClick={() => handleToggleActive(p)} className="btn btn-outline-success btn-sm flex-fill">Activar</button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleToggleActive(p)}
+                                            className="admin-action-btn admin-action-btn--success"
+                                        >
+                                            Activar
+                                        </button>
                                     )}
                                 </div>
                             </div>

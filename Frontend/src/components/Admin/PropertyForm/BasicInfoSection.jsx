@@ -2,27 +2,28 @@ import React from 'react';
 import PropietarioSelect from './PropietarioSelect';
 
 export default function BasicInfoSection({ formData, tipos, propietarios = [], onChange }) {
-
     return (
-        <div className="mb-4">
-            <h4 className="fw-bold text-primary mb-3">Información Básica</h4>
+        <div className="admin-form-section">
+            <h4 className="admin-form-section-title">Información Básica</h4>
 
             <div className="row g-3">
                 <div className="col-12">
-                    <label className="form-label fw-semibold">Título:</label>
+                    <label className="form-label" htmlFor="pf-titulo">Título</label>
                     <input
+                        id="pf-titulo"
                         type="text"
                         name="titulo"
                         value={formData.titulo || ''}
                         onChange={onChange}
                         required
-                        className="form-control form-control-lg"
+                        className="form-control"
                     />
                 </div>
 
                 <div className="col-md-4">
-                    <label className="form-label fw-semibold">Tipo de Inmueble:</label>
+                    <label className="form-label" htmlFor="pf-tipo">Tipo de Inmueble</label>
                     <select
+                        id="pf-tipo"
                         name="tipo_inmueble_id"
                         value={formData.tipo_inmueble_id || ''}
                         onChange={onChange}
@@ -31,16 +32,15 @@ export default function BasicInfoSection({ formData, tipos, propietarios = [], o
                     >
                         <option value="">Seleccione...</option>
                         {tipos.map((t) => (
-                            <option key={t.id} value={t.id}>
-                                {t.nombre}
-                            </option>
+                            <option key={t.id} value={t.id}>{t.nombre}</option>
                         ))}
                     </select>
                 </div>
 
                 <div className="col-md-4">
-                    <label className="form-label fw-semibold">Tipo de Operación:</label>
+                    <label className="form-label" htmlFor="pf-operacion">Tipo de Operación</label>
                     <select
+                        id="pf-operacion"
                         name="tipo_operacion"
                         value={formData.tipo_operacion || 'venta'}
                         onChange={onChange}
@@ -53,7 +53,7 @@ export default function BasicInfoSection({ formData, tipos, propietarios = [], o
                 </div>
 
                 <div className="col-md-4">
-                    <label className="form-label fw-semibold">Propietario:</label>
+                    <label className="form-label">Propietario</label>
                     <PropietarioSelect
                         propietarios={propietarios}
                         value={formData.propietario_id || ''}

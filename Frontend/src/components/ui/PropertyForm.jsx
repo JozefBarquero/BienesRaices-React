@@ -1,4 +1,3 @@
-import React from 'react';
 import usePropertyForm from '@/pages/Admin/usePropertyForm';
 import StatusSection from '@/components/Admin/PropertyForm/StatusSection';
 import BasicInfoSection from '@/components/Admin/PropertyForm/BasicInfoSection';
@@ -7,6 +6,7 @@ import LocationSection from '@/components/Admin/PropertyForm/LocationSection';
 import FeaturesSection from '@/components/Admin/PropertyForm/FeaturesSection';
 import DescriptionsSection from '@/components/Admin/PropertyForm/DescriptionsSection';
 import MultimediaSection from '@/components/Admin/PropertyForm/MultimediaSection';
+import { LiquidGlassButton } from '@/components/ui/LiquidGlass';
 
 export default function PropertyForm({ initialData, onSubmit, onCancel }) {
     const {
@@ -25,11 +25,11 @@ export default function PropertyForm({ initialData, onSubmit, onCancel }) {
         handleSecondaryFilesChange,
         handleRemoveSecondaryImage,
         handleReorderSecondaryImages,
-        handleSubmit
+        handleSubmit,
     } = usePropertyForm(initialData, onSubmit);
 
     return (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="lg-form">
             <StatusSection formData={formData} onChange={handleCheckboxChange} />
 
             <BasicInfoSection
@@ -65,13 +65,13 @@ export default function PropertyForm({ initialData, onSubmit, onCancel }) {
                 isNew={!initialData}
             />
 
-            <div className="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                <button type="button" onClick={onCancel} className="btn btn-secondary px-4">
+            <div className="admin-form-actions">
+                <LiquidGlassButton variant="ghost" onClick={onCancel}>
                     Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary px-4 fw-semibold">
+                </LiquidGlassButton>
+                <LiquidGlassButton type="submit" variant="primary">
                     Guardar Propiedad
-                </button>
+                </LiquidGlassButton>
             </div>
         </form>
     );

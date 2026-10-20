@@ -3,7 +3,7 @@
     font-style: normal;
     font-weight: 200 800;
     font-display: swap;
-    src: url('/fonts/plus-jakarta-sans/PlusJakartaSans-Variable.ttf') format('truetype-variations');
+    src: url('/fonts/plus-jakarta-sans/PlusJakartaSans-Variable.woff2') format('truetype-variations');
 }
 
 @font-face {
@@ -11,5 +11,5 @@
     font-style: italic;
     font-weight: 200 800;
     font-display: swap;
-    src: url('/fonts/plus-jakarta-sans/PlusJakartaSans-Italic-VariableFont_wght.ttf') format('truetype-variations');
+    src: url('/fonts/plus-jakarta-sans/PlusJakartaSans-Italic-VariableFont_wght.woff2') format('truetype-variations');
 }

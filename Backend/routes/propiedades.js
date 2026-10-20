@@ -1,9 +1,20 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import db from '../config/db.js';
 import { uploadMiddleware, procesarYGuardarImagen } from '../utils/imageProcessor.js';
 import { verifyToken } from './auth.js';
 
 const router = express.Router();
+
+const getSessionUser = (req) => {
+    const token = req.cookies?.adminToken;
+    if (!token) return null;
+    try {
+        return jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+        return null;
+    }
+};
 
 router.get('/', async (req, res) => {
     try {
@@ -56,10 +67,19 @@ router.get('/:id', async (req, res) => {
             return res.status(404).json({ error: 'Propiedad no encontrada' });
         }
 
+        const propiedad = rows[0];
+
+        if (!propiedad.activa) {
+            const user = getSessionUser(req);
+            if (!user) {
+                return res.status(404).json({ error: 'Propiedad no encontrada' });
+            }
+        }
+
         const [imagenes] = await db.query('SELECT url_imagen FROM imagenes_propiedad WHERE propiedad_id = ? ORDER BY orden ASC', [req.params.id]);
 
         res.json({
-            ...rows[0],
+            ...propiedad,
             imagenes_secundarias: imagenes.map(img => img.url_imagen)
         });
     } catch (error) {
@@ -90,10 +110,10 @@ router.post('/', verifyToken, (req, res, next) => {
         await conexion.beginTransaction();
 
         const [result] = await conexion.query(
-            `INSERT INTO propiedades 
-             (titulo, descripcion_corta, descripcion_larga, ubicacion, direccion_exacta, latitud, longitud, 
-              tipo_inmueble_id, tipo_operacion, precio, moneda, tipo_precio, habitaciones, banos, 
-              estacionamientos, area_construida, area_terreno, imagen_principal, url_video, 
+            `INSERT INTO propiedades
+             (titulo, descripcion_corta, descripcion_larga, ubicacion, direccion_exacta, latitud, longitud,
+              tipo_inmueble_id, tipo_operacion, precio, moneda, tipo_precio, habitaciones, banos,
+              estacionamientos, area_construida, area_terreno, imagen_principal, url_video,
               destacada, activa, creado_por, propietario_id)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
@@ -178,10 +198,10 @@ router.put('/:id', verifyToken, (req, res, next) => {
         }
 
         await conexion.query(
-            `UPDATE propiedades 
-             SET titulo=?, descripcion_corta=?, descripcion_larga=?, ubicacion=?, direccion_exacta=?, 
-                 latitud=?, longitud=?, tipo_inmueble_id=?, tipo_operacion=?, precio=?, moneda=?, 
-                 tipo_precio=?, habitaciones=?, banos=?, estacionamientos=?, area_construida=?, 
+            `UPDATE propiedades
+             SET titulo=?, descripcion_corta=?, descripcion_larga=?, ubicacion=?, direccion_exacta=?,
+                 latitud=?, longitud=?, tipo_inmueble_id=?, tipo_operacion=?, precio=?, moneda=?,
+                 tipo_precio=?, habitaciones=?, banos=?, estacionamientos=?, area_construida=?,
                  area_terreno=?, imagen_principal=?, url_video=?, destacada=?, activa=?, propietario_id=?
              WHERE id=?`,
             [
@@ -253,7 +273,6 @@ router.delete('/:id', verifyToken, async (req, res) => {
     }
 });
 
-
 router.patch('/:id/estado', verifyToken, async (req, res) => {
     const { activa } = req.body;
     if (typeof activa !== 'boolean') {
@@ -267,6 +286,5 @@ router.patch('/:id/estado', verifyToken, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
 
 export default router;

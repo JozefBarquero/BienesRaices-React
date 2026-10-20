@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, getImageUrl } from '@/services/api';
+import NotFound from '@/pages/NotFound';
+import { LiquidGlassPanel } from '@/components/ui/LiquidGlass';
 import {
     PropertyGallery,
     PropertyHeader,
@@ -9,7 +11,7 @@ import {
     PropertyDescription,
     PropertyLocation,
     PropertyVideo,
-    PropertyContactForm
+    PropertyContactForm,
 } from '@/components/common/property';
 
 export default function PropertyDetailPage() {
@@ -17,6 +19,7 @@ export default function PropertyDetailPage() {
     const [propiedad, setPropiedad] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {
         const fetchPropiedad = async () => {
@@ -31,10 +34,14 @@ export default function PropertyDetailPage() {
                 setPropiedad({
                     ...data,
                     imagen: urlPrincipal,
-                    galeria: galeriaCompleta
+                    galeria: galeriaCompleta,
                 });
             } catch (err) {
-                setError(err.message);
+                if (err.status === 404) {
+                    setNotFound(true);
+                } else {
+                    setError(err.message);
+                }
             } finally {
                 setLoading(false);
             }
@@ -45,31 +52,46 @@ export default function PropertyDetailPage() {
 
     if (loading) {
         return (
-            <div className="container py-5 d-flex justify-content-center">
-                <div className="spinner-border text-primary" role="status"></div>
+            <div className="property-loading">
+                <div className="property-loading-spinner" role="status" aria-label="Cargando" />
+                <span>Cargando propiedad...</span>
             </div>
         );
     }
 
+    if (notFound) {
+        return <NotFound />;
+    }
+
     if (error) {
         return (
-            <div className="container py-5">
-                <div className="alert alert-danger shadow-sm rounded-4">{error}</div>
+            <div className="property-error-wrap">
+                <div className="property-error lg lg--soft property-error--danger">
+                    <span className="property-error-icon" aria-hidden="true">!</span>
+                    <h2 className="property-error-title">No pudimos cargar la propiedad</h2>
+                    <p className="property-error-text">{error}</p>
+                </div>
             </div>
         );
     }
 
     if (!propiedad) {
         return (
-            <div className="container py-5">
-                <div className="alert alert-warning shadow-sm rounded-4">Propiedad no encontrada.</div>
+            <div className="property-error-wrap">
+                <div className="property-error lg lg--soft">
+                    <span className="property-error-icon" aria-hidden="true">?</span>
+                    <h2 className="property-error-title">Propiedad no encontrada</h2>
+                    <p className="property-error-text">
+                        La propiedad que buscas no está disponible o fue removida del catálogo.
+                    </p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div style={{ fontFamily: "'Plus Ultra Jakarta Sans', 'Poppins', sans-serif", minHeight: "100vh", paddingBottom: "3rem" }}>
-            <div className="container pt-4">
+        <main className="property-detail">
+            <div className="container">
                 <PropertyHeader title={propiedad.titulo} />
 
                 <div className="mb-4">
@@ -82,34 +104,41 @@ export default function PropertyDetailPage() {
 
                 <div className="row g-4">
                     <div className="col-lg-8">
-                        <PropertyFeatures propiedad={propiedad} />
-                        
-                        <div className="card border-0 p-4 p-md-5 rounded-4 shadow-sm mb-4">
+                        <LiquidGlassPanel liquid className="property-section">
+                            <PropertyFeatures propiedad={propiedad} />
+                        </LiquidGlassPanel>
+
+                        <LiquidGlassPanel liquid className="property-section">
                             <PropertyDescription description={propiedad.descripcion_larga} />
-                        </div>
-                        
-                        <div className="card border-0 p-4 p-md-5 rounded-4 shadow-sm mb-4">
+                        </LiquidGlassPanel>
+
+                        <LiquidGlassPanel liquid className="property-section">
                             <PropertyLocation propiedad={propiedad} />
-                        </div>
-                        
+                        </LiquidGlassPanel>
+
                         {propiedad.url_video && (
-                            <div className="card border-0 p-4 p-md-5 rounded-4 shadow-sm mb-4">
+                            <LiquidGlassPanel liquid className="property-section">
                                 <PropertyVideo url={propiedad.url_video} title={propiedad.titulo} />
-                            </div>
+                            </LiquidGlassPanel>
                         )}
                     </div>
 
                     <div className="col-lg-4">
-                        <div className="sticky-top" style={{ top: '2rem', zIndex: 10 }}>
-                            <PropertyInfoCard propiedad={propiedad} />
-                            <PropertyContactForm
-                                propertyId={propiedad.id}
-                                propertyTitle={propiedad.titulo}
-                            />
+                        <div className="property-sidebar">
+                            <LiquidGlassPanel liquid className="property-section">
+                                <PropertyInfoCard propiedad={propiedad} />
+                            </LiquidGlassPanel>
+
+                            <LiquidGlassPanel liquid className="property-section">
+                                <PropertyContactForm
+                                    propertyId={propiedad.id}
+                                    propertyTitle={propiedad.titulo}
+                                />
+                            </LiquidGlassPanel>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     );
 }

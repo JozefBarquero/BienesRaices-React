@@ -5,8 +5,9 @@ export default function PropertyLocation({ propiedad }) {
 
     return (
         <div>
-            <h4 className="fw-bolder mb-3 text-body">Ubicación y Entorno</h4>
-            <div className="ratio ratio-21x9 rounded-4 shadow-sm overflow-hidden mb-4">
+            <h4 className="prop-location-title">Ubicación y Entorno</h4>
+
+            <div className="ratio ratio-21x9 prop-location-map">
                 <iframe
                     src={`https://maps.google.com/maps?q=${propiedad.latitud},${propiedad.longitud}&z=18&t=k&output=embed`}
                     width="100%"
@@ -16,8 +17,9 @@ export default function PropertyLocation({ propiedad }) {
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                     title="Mapa de ubicación"
-                ></iframe>
+                />
             </div>
+
             <PropertyAiSummary
                 propertyId={propiedad.id}
                 lat={propiedad.latitud}

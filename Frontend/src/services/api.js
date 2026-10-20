@@ -38,6 +38,7 @@ const handleResponse = async (res, defaultMessage = 'Error en la solicitud') => 
         window.location.href = '/admin';
         toast.error('Sesión expirada');
         const err = new Error('Sesión expirada');
+        err.status = 401;
         err.toastShown = true;
         throw err;
     }
@@ -55,6 +56,7 @@ const handleResponse = async (res, defaultMessage = 'Error en la solicitud') => 
         }
         toast.error(msg);
         const err = new Error(msg);
+        err.status = res.status;
         err.toastShown = true;
         throw err;
     }

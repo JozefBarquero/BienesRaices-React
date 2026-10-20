@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '@/services/api';
 import { toast } from '@/components/ui/Toast';
+import { LiquidGlassPanel, LiquidGlassButton } from '@/components/ui/LiquidGlass';
 
 export default function BootstrapAdminForm({ onSuccess }) {
     const [formData, setFormData] = useState({
@@ -9,7 +10,7 @@ export default function BootstrapAdminForm({ onSuccess }) {
         apellidos: '',
         email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
     });
     const [loading, setLoading] = useState(false);
 
@@ -36,7 +37,7 @@ export default function BootstrapAdminForm({ onSuccess }) {
                 nombre: formData.nombre,
                 apellidos: formData.apellidos,
                 email: formData.email,
-                password: formData.password
+                password: formData.password,
             });
             onSuccess();
         } catch (err) {
@@ -47,112 +48,106 @@ export default function BootstrapAdminForm({ onSuccess }) {
     };
 
     return (
-        <div className="container py-5">
-            <div className="row justify-content-center py-4 py-md-5">
-                <div className="col-md-9 col-lg-7 col-xl-6">
-                    <div className="card border-0 shadow-sm p-4 p-md-5 rounded-4">
-                        <div className="text-center mb-4">
-                            <h2 className="h3 fw-bold mb-2">Configuración Inicial</h2>
-                            <p className="text-muted mb-0">
-                                No existen trabajadores registrados. Crea la primera cuenta de administrador.
-                            </p>
-                        </div>
+        <main className="admin-auth-wrap">
+            <LiquidGlassPanel liquid className="admin-auth-card admin-auth-card--wide">
+                <h2 className="admin-auth-title">Configuración Inicial</h2>
+                <p className="admin-auth-subtitle">
+                    No existen trabajadores registrados. Crea la primera cuenta de administrador.
+                </p>
 
-                        <div className="alert alert-info small mb-4" role="alert">
-                            Esta pantalla solo estará disponible mientras no exista ningún trabajador en el sistema.
-                            Una vez creada la primera cuenta, el acceso a este formulario se deshabilitará automáticamente.
-                        </div>
-
-                        <form onSubmit={handleSubmit}>
-                            <div className="row">
-                                <div className="col-md-6 mb-3">
-                                    <label className="form-label fw-semibold">Cédula</label>
-                                    <input
-                                        type="text"
-                                        name="id"
-                                        className="form-control"
-                                        value={formData.id}
-                                        onChange={handleChange}
-                                        required
-                                    />
-                                </div>
-                                <div className="col-md-6 mb-3">
-                                    <label className="form-label fw-semibold">Correo Electrónico</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        className="form-control"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        required
-                                    />
-                                </div>
-                                <div className="col-md-6 mb-3">
-                                    <label className="form-label fw-semibold">Nombre</label>
-                                    <input
-                                        type="text"
-                                        name="nombre"
-                                        className="form-control"
-                                        value={formData.nombre}
-                                        onChange={handleChange}
-                                        required
-                                    />
-                                </div>
-                                <div className="col-md-6 mb-3">
-                                    <label className="form-label fw-semibold">Apellidos</label>
-                                    <input
-                                        type="text"
-                                        name="apellidos"
-                                        className="form-control"
-                                        value={formData.apellidos}
-                                        onChange={handleChange}
-                                        required
-                                    />
-                                </div>
-                                <div className="col-md-6 mb-3">
-                                    <label className="form-label fw-semibold">Contraseña</label>
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        className="form-control"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        required
-                                        minLength={8}
-                                    />
-                                </div>
-                                <div className="col-md-6 mb-3">
-                                    <label className="form-label fw-semibold">Confirmar Contraseña</label>
-                                    <input
-                                        type="password"
-                                        name="confirmPassword"
-                                        className="form-control"
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                        required
-                                        minLength={8}
-                                    />
-                                </div>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="btn btn-primary btn-lg w-100 fw-semibold py-3 shadow-sm"
-                            >
-                                {loading ? (
-                                    <span className="d-flex align-items-center justify-content-center gap-2">
-                                        <span className="spinner-border spinner-border-sm" role="status"></span>
-                                        Creando cuenta...
-                                    </span>
-                                ) : (
-                                    'Crear Cuenta de Administrador'
-                                )}
-                            </button>
-                        </form>
-                    </div>
+                <div className="admin-alert admin-alert--info">
+                    Esta pantalla solo estará disponible mientras no exista ningún trabajador en el sistema.
+                    Una vez creada la primera cuenta, el acceso a este formulario se deshabilitará automáticamente.
                 </div>
-            </div>
-        </div>
+
+                <form onSubmit={handleSubmit} className="lg-form mt-3">
+                    <div className="row">
+                        <div className="col-md-6 mb-3">
+                            <label className="form-label" htmlFor="bs-id">Cédula</label>
+                            <input
+                                id="bs-id"
+                                type="text"
+                                name="id"
+                                className="form-control"
+                                value={formData.id}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
+                        <div className="col-md-6 mb-3">
+                            <label className="form-label" htmlFor="bs-email">Correo Electrónico</label>
+                            <input
+                                id="bs-email"
+                                type="email"
+                                name="email"
+                                className="form-control"
+                                value={formData.email}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
+                        <div className="col-md-6 mb-3">
+                            <label className="form-label" htmlFor="bs-nombre">Nombre</label>
+                            <input
+                                id="bs-nombre"
+                                type="text"
+                                name="nombre"
+                                className="form-control"
+                                value={formData.nombre}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
+                        <div className="col-md-6 mb-3">
+                            <label className="form-label" htmlFor="bs-apellidos">Apellidos</label>
+                            <input
+                                id="bs-apellidos"
+                                type="text"
+                                name="apellidos"
+                                className="form-control"
+                                value={formData.apellidos}
+                                onChange={handleChange}
+                                required
+                            />
+                        </div>
+                        <div className="col-md-6 mb-3">
+                            <label className="form-label" htmlFor="bs-password">Contraseña</label>
+                            <input
+                                id="bs-password"
+                                type="password"
+                                name="password"
+                                className="form-control"
+                                value={formData.password}
+                                onChange={handleChange}
+                                required
+                                minLength={8}
+                            />
+                        </div>
+                        <div className="col-md-6 mb-3">
+                            <label className="form-label" htmlFor="bs-confirm">Confirmar Contraseña</label>
+                            <input
+                                id="bs-confirm"
+                                type="password"
+                                name="confirmPassword"
+                                className="form-control"
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                                required
+                                minLength={8}
+                            />
+                        </div>
+                    </div>
+
+                    <LiquidGlassButton
+                        type="submit"
+                        variant="primary"
+                        className="w-100"
+                        disabled={loading}
+                    >
+                        {loading ? 'Creando cuenta...' : 'Crear Cuenta de Administrador'}
+                    </LiquidGlassButton>
+                </form>
+            </LiquidGlassPanel>
+        </main>
     );
 }

@@ -1,186 +1,136 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { api } from '@/services/api';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useCurrency } from '@/context/CurrencyContext';
+import '@/assets/styles/layout.css';
+
+const NAV_LINKS = [
+    { to: '/', label: 'Inicio' },
+    { to: '/nosotros', label: 'Nosotros' },
+    { to: '/servicios', label: 'Servicios' },
+    { to: '/catalogo', label: 'Catálogo' },
+    { to: '/contacto', label: 'Contacto' },
+];
 
 export default function Header() {
-
-
-    
     const [isDark, setIsDark] = useState(false);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
     const navigate = useNavigate();
-    
-
-
     const { userCurrency, setUserCurrency } = useCurrency();
 
-
-
     useEffect(() => {
-
         const savedTheme = localStorage.getItem('theme') || 'light';
-        const isDarkMode = savedTheme === 'dark';
-        setIsDark(isDarkMode);
+        setIsDark(savedTheme === 'dark');
         document.documentElement.setAttribute('data-bs-theme', savedTheme);
-        setIsAuthenticated(api.auth.isAuthenticated());
     }, []);
 
-
-
-
+    useEffect(() => {
+        setMenuOpen(false);
+    }, [navigate]);
 
     const toggleTheme = () => {
-
         const nextTheme = isDark ? 'light' : 'dark';
         setIsDark(!isDark);
         document.documentElement.setAttribute('data-bs-theme', nextTheme);
         localStorage.setItem('theme', nextTheme);
-
     };
 
-
-
-
-    const handleLogout = () => {
-
-
-        api.auth.logout();
-        setIsAuthenticated(false);
-        navigate('/admin');
-    };
-
-
+    const closeMenu = () => setMenuOpen(false);
 
     return (
-        <header className="sticky-top shadow-sm">
-
-
-            <nav className="navbar navbar-expand-lg bg-body-tertiary transition-theme">
-
-
-                <div className="container">
-
-        
-
-
-
-                    <Link 
-                        to="/" 
-                        className="navbar-brand fw-bold me-2 my-0"
-                    >
-                        <div className="d-lg-none lh-sm" style={{ maxWidth: '210px' }}>
-                            <span className="d-block text-body-secondary text-uppercase fw-normal" style={{ fontSize: '0.6rem', letterSpacing: '0.5px' }}>
-                                Bienes Raíces
-                            </span>
-                            <span className="d-block text-wrap" style={{ fontSize: '0.9rem', lineHeight: '1.15' }}>
-                                Las Horquetas de Sarapiquí
-                            </span>
-                        </div>
-                        
-                        <span className="d-none d-lg-inline fs-5">
-                            Bienes Raíces Las Horquetas de Sarapiquí
+        <header className="site-header">
+            <div className="container">
+                <div className="site-nav-inner">
+                    <Link to="/" className="site-brand" onClick={closeMenu}>
+                        <span className="site-brand-mark">
+                            <img src="/ico/icon.svg" alt="" />
+                        </span>
+                        <span className="site-brand-text">
+                            <span className="site-brand-eyebrow">Bienes Raíces</span>
+                            <span className="site-brand-name">Las Horquetas de Sarapiquí</span>
                         </span>
                     </Link>
 
+                    <nav className="site-nav-links" aria-label="Navegación principal">
+                        {NAV_LINKS.map((link) => (
+                            <NavLink
+                                key={link.to}
+                                to={link.to}
+                                end={link.to === '/'}
+                                className={({ isActive }) => `site-nav-link${isActive ? ' active' : ''}`}
+                            >
+                                {link.label}
+                            </NavLink>
+                        ))}
+                    </nav>
 
-
-
-                    <div className="d-flex align-items-center gap-1 gap-sm-2 order-lg-last ms-auto flex-shrink-0">
-
-
-
-                        <select 
-                            className="form-select form-select-sm" 
-                            style={{ width: 'auto', cursor: 'pointer', fontSize: '0.85rem' }}
+                    <div className="site-actions">
+                        <select
+                            className="site-currency"
                             value={userCurrency}
                             onChange={(e) => setUserCurrency(e.target.value)}
                             aria-label="Moneda"
                         >
-                            <option value="CRC">CRC (₡)</option>
-                            <option value="USD">USD ($)</option>
-                            <option value="EUR">EUR (€)</option>
+                            <option value="CRC">CRC ₡</option>
+                            <option value="USD">USD $</option>
+                            <option value="EUR">EUR €</option>
                         </select>
 
-
-
-
-                        <button 
-                            onClick={toggleTheme} 
-                            className="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center p-2 rounded-circle"
-                            aria-label="Cambiar tema"
+                        <button
+                            type="button"
+                            onClick={toggleTheme}
+                            className="site-icon-btn"
+                            aria-label={isDark ? 'Modo claro' : 'Modo oscuro'}
                         >
                             <img
-                                src={isDark ? "/svg/light-mode-outline.svg" : "/svg/dark-mode-outline.svg"}
-                                alt={isDark ? "Modo claro" : "Modo oscuro"}
-                                width="18" 
+                                src={isDark ? '/svg/light-mode-outline.svg' : '/svg/dark-mode-outline.svg'}
+                                alt=""
+                                width="18"
                                 height="18"
                                 className="icon-theme"
                             />
                         </button>
 
-
-
-                        <button 
-                            className="navbar-toggler border-0 p-1" 
-                            type="button" 
-                            data-bs-toggle="collapse" 
-                            data-bs-target="#navbarMain" 
-                            aria-controls="navbarMain" 
-                            aria-expanded="false" 
-                            aria-label="Navegación principal"
+                        <button
+                            type="button"
+                            className="site-menu-btn"
+                            onClick={() => setMenuOpen((open) => !open)}
+                            aria-expanded={menuOpen}
+                            aria-controls="site-mobile-menu"
+                            aria-label="Alternar menú"
                         >
-                            <span className="navbar-toggler-icon"></span>
-
-
+                            {menuOpen ? (
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            ) : (
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                    <line x1="4" y1="7" x2="20" y2="7" />
+                                    <line x1="4" y1="12" x2="20" y2="12" />
+                                    <line x1="4" y1="17" x2="20" y2="17" />
+                                </svg>
+                            )}
                         </button>
-
-
                     </div>
-
-
-
-
-
-        
-                    <div className="collapse navbar-collapse w-100" id="navbarMain">
-
-
-                        <ul className="navbar-nav ms-auto mb-2 mb-lg-0 fw-semibold align-items-lg-center pt-3 pt-lg-0 text-end">
-
-                            <li className="nav-item">
-                                <Link to="/" className="nav-link">Inicio</Link>
-                            </li>
-
-                            <li className="nav-item">
-                                <Link to="/nosotros" className="nav-link">Nosotros</Link>
-                            </li>
-
-                            <li className="nav-item">
-                                <Link to="/servicios" className="nav-link">Servicios</Link>
-                            </li>
-
-                            <li className="nav-item">
-                                <Link to="/catalogo" className="nav-link">Catálogo</Link>
-                            </li>
-
-                            <li className="nav-item">
-                                <Link to="/contacto" className="nav-link">Contacto</Link>
-                            </li>
-
-
-                        </ul>
-
-
-                    </div>
-
-
                 </div>
-            </nav>
 
-
+                <div id="site-mobile-menu" className={`site-mobile${menuOpen ? ' open' : ''}`}>
+                    <ul className="site-mobile-list">
+                        {NAV_LINKS.map((link) => (
+                            <li key={link.to}>
+                                <NavLink
+                                    to={link.to}
+                                    end={link.to === '/'}
+                                    onClick={closeMenu}
+                                    className="site-mobile-link"
+                                >
+                                    {link.label}
+                                </NavLink>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
         </header>
-
-
     );
 }

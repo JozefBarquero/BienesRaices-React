@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { api } from '@/services/api';
 import { toast } from '@/components/ui/Toast';
+import { LiquidGlassButton } from '@/components/ui/LiquidGlass';
 
 export default function PropertyContactForm({ propertyId }) {
     const [form, setForm] = useState({
         nombre_cliente: '',
         email_cliente: '',
         telefono_cliente: '',
-        mensaje: ''
+        mensaje: '',
     });
     const [loading, setLoading] = useState(false);
 
@@ -19,7 +20,7 @@ export default function PropertyContactForm({ propertyId }) {
             await api.contacto.enviar({
                 ...form,
                 propiedad_id: propertyId,
-                origen: 'propiedad'
+                origen: 'propiedad',
             });
 
             toast.success('¡Mensaje enviado! Nos comunicaremos contigo pronto.');
@@ -32,88 +33,85 @@ export default function PropertyContactForm({ propertyId }) {
     };
 
     return (
-        <div className="card border-0 shadow-sm p-4 rounded-4">
-            <div className="text-center mb-4">
-                <h4 className="fw-bolder text-body mb-2">¿Te interesa?</h4>
-                <p className="text-body-secondary small m-0">Déjanos tus datos y un asesor se comunicará contigo pronto.</p>
+        <div>
+            <div className="prop-contact-head">
+                <h4 className="prop-contact-title">¿Te interesa?</h4>
+                <p className="prop-contact-text">
+                    Déjanos tus datos y un asesor se comunicará contigo pronto.
+                </p>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="lg-form">
                 <div className="row g-3">
                     <div className="col-12">
-                        <div className="form-floating">
-                            <input
-                                type="text"
-                                className="form-control rounded-3"
-                                id="nombreInput"
-                                placeholder="Tu Nombre Completo"
-                                required
-                                value={form.nombre_cliente}
-                                onChange={(e) => setForm({ ...form, nombre_cliente: e.target.value })}
-                            />
-                            <label htmlFor="nombreInput" className="text-body-secondary">Nombre completo</label>
-                        </div>
+                        <label className="form-label" htmlFor="prop-nombre">Nombre completo</label>
+                        <input
+                            type="text"
+                            id="prop-nombre"
+                            className="form-control"
+                            placeholder="Tu nombre completo"
+                            required
+                            value={form.nombre_cliente}
+                            onChange={(e) => setForm({ ...form, nombre_cliente: e.target.value })}
+                        />
                     </div>
 
                     <div className="col-12">
-                        <div className="form-floating">
-                            <input
-                                type="email"
-                                className="form-control rounded-3"
-                                id="correoInput"
-                                placeholder="Tu Correo Electrónico"
-                                required
-                                value={form.email_cliente}
-                                onChange={(e) => setForm({ ...form, email_cliente: e.target.value })}
-                            />
-                            <label htmlFor="correoInput" className="text-body-secondary">Correo electrónico</label>
-                        </div>
+                        <label className="form-label" htmlFor="prop-email">Correo electrónico</label>
+                        <input
+                            type="email"
+                            id="prop-email"
+                            className="form-control"
+                            placeholder="correo@ejemplo.com"
+                            required
+                            value={form.email_cliente}
+                            onChange={(e) => setForm({ ...form, email_cliente: e.target.value })}
+                        />
                     </div>
 
                     <div className="col-12">
-                        <div className="form-floating">
-                            <input
-                                type="text"
-                                className="form-control rounded-3"
-                                id="telefonoInput"
-                                placeholder="Tu Teléfono (Opcional)"
-                                value={form.telefono_cliente}
-                                onChange={(e) => setForm({ ...form, telefono_cliente: e.target.value })}
-                            />
-                            <label htmlFor="telefonoInput" className="text-body-secondary">Teléfono (Opcional)</label>
-                        </div>
+                        <label className="form-label" htmlFor="prop-telefono">
+                            Teléfono <span style={{ color: 'var(--color-muted)', fontWeight: 500 }}>(opcional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="prop-telefono"
+                            className="form-control"
+                            placeholder="+(506) 8888-8888"
+                            value={form.telefono_cliente}
+                            onChange={(e) => setForm({ ...form, telefono_cliente: e.target.value })}
+                        />
                     </div>
 
                     <div className="col-12">
-                        <div className="form-floating">
-                            <textarea
-                                className="form-control rounded-3"
-                                id="mensajeInput"
-                                placeholder="Mensaje o consulta"
-                                required
-                                style={{ height: '100px' }}
-                                value={form.mensaje}
-                                onChange={(e) => setForm({ ...form, mensaje: e.target.value })}
-                            ></textarea>
-                            <label htmlFor="mensajeInput" className="text-body-secondary">Mensaje o consulta</label>
-                        </div>
+                        <label className="form-label" htmlFor="prop-mensaje">Mensaje o consulta</label>
+                        <textarea
+                            id="prop-mensaje"
+                            className="form-control"
+                            placeholder="Escribe tu mensaje aquí..."
+                            required
+                            rows="4"
+                            value={form.mensaje}
+                            onChange={(e) => setForm({ ...form, mensaje: e.target.value })}
+                        />
                     </div>
 
                     <div className="col-12 mt-4">
-                        <button
+                        <LiquidGlassButton
                             type="submit"
+                            variant="primary"
+                            className="prop-contact-btn"
                             disabled={loading}
-                            className="btn btn-primary w-100 py-3 rounded-3 fw-bold text-white shadow-sm transition-theme"
                         >
                             {loading ? (
-                                <span className="d-flex align-items-center justify-content-center gap-2">
-                                    <span className="spinner-border spinner-border-sm" role="status"></span>
+                                <span className="d-inline-flex align-items-center gap-2">
+                                    <span className="prop-contact-btn-spinner" aria-hidden="true" />
                                     Enviando...
                                 </span>
                             ) : (
                                 'Enviar mensaje'
                             )}
-                        </button>
+                        </LiquidGlassButton>
                     </div>
                 </div>
             </form>

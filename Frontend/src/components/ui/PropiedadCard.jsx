@@ -1,103 +1,58 @@
-import { Link } from 'react-router-dom';
 import { formatPrice } from '@/utils/formatters';
 import { useCurrency } from '@/context/CurrencyContext';
+import { LiquidGlassCard, LiquidGlassButton } from '@/components/ui/LiquidGlass';
 
 export default function PropiedadCard({ propiedad }) {
-
     const { userCurrency, convertPrice } = useCurrency();
 
-    
     const convertedAmount = convertPrice(propiedad.precio, propiedad.moneda, userCurrency);
-
+    const mostrarConversion =
+        propiedad.moneda !== userCurrency &&
+        convertedAmount !== null &&
+        convertedAmount !== undefined;
 
     return (
-
-        <div className="card h-100 border-0 shadow-sm overflow-hidden rounded-4">
-
-            <div className="position-relative aspect-landscape">
-
+        <LiquidGlassCard liquid className="prop-card" interactive>
+            <div className="prop-card-img">
                 {propiedad.destacada === 1 && (
-
-                    <span className="badge bg-warning text-dark position-absolute top-0 start-0 m-3 shadow-sm fw-bold">
-                        Destacada
-                    </span>
+                    <span className="prop-card-badge">Destacada</span>
                 )}
-
-
-                <img src={propiedad.imagen} alt={propiedad.titulo} className="img-cover" />
-
-
+                {propiedad.tipo_operacion && (
+                    <span className="prop-card-type">{propiedad.tipo_operacion}</span>
+                )}
+                <img src={propiedad.imagen} alt={propiedad.titulo} loading="lazy" />
             </div>
 
-
-
-
-            <div className="card-body p-4 d-flex flex-column">
-
-
-
-                <h3 className="h5 card-title fw-bold text-truncate mb-1" title={propiedad.titulo}>
+            <div className="prop-card-body">
+                <h3 className="prop-card-title" title={propiedad.titulo}>
                     {propiedad.titulo}
                 </h3>
 
-
-                
-                <p className="card-text text-body-secondary small mb-3 text-truncate">
+                <p className="prop-card-location" title={propiedad.ubicacion_completa}>
                     {propiedad.ubicacion_completa}
                 </p>
 
-
-
-                <div className="d-flex justify-content-between align-items-center mb-3">
-
-
-                    <span className="badge bg-body-secondary text-body border">
-                        {propiedad.tipo_inmueble_texto}
-                    </span>
-
-                    <span className="fw-semibold text-primary text-capitalize">
-                        {propiedad.tipo_operacion}
-                    </span>
-
-
+                <div className="prop-card-meta">
+                    <span className="prop-card-chip">{propiedad.tipo_inmueble_texto}</span>
                 </div>
 
-
-
-                <div className="mb-3">
-
-
-                    <div className="fs-4 fw-bold text-primary">
+                <div>
+                    <p className="prop-card-price">
                         {formatPrice(propiedad.precio, propiedad.moneda)}
-                    </div>
-
-
-                    {propiedad.moneda !== userCurrency && convertedAmount !== null && (
-
-
-                        <div className="text-body-secondary small">
+                    </p>
+                    {mostrarConversion && (
+                        <p className="prop-card-approx">
                             Aprox: {formatPrice(convertedAmount, userCurrency)}
-                        </div>
-
+                        </p>
                     )}
-
-
                 </div>
 
-                <div className="mt-auto">
-
-                    <Link to={`/catalogo/${propiedad.id}`} className="btn btn-primary w-100 fw-semibold">
+                <div className="prop-card-cta">
+                    <LiquidGlassButton variant="primary" to={`/catalogo/${propiedad.id}`}>
                         Ver Detalles
-                    </Link>
-
-
+                    </LiquidGlassButton>
                 </div>
-
-
             </div>
-
-        </div>
-
-        
+        </LiquidGlassCard>
     );
 }

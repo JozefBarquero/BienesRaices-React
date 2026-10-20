@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/services/api';
 import { toast } from '@/components/ui/Toast';
 import BootstrapAdminForm from '@/components/Admin/AdminDashboard/BootstrapAdminForm';
+import { LiquidGlassPanel, LiquidGlassButton } from '@/components/ui/LiquidGlass';
+import '@/assets/styles/admin.css';
 
 export default function AdminLoginPage() {
     const [email, setEmail] = useState('');
@@ -55,8 +57,8 @@ export default function AdminLoginPage() {
 
     if (needsBootstrap === null) {
         return (
-            <div className="container py-5 text-center">
-                <div className="spinner-border text-primary" role="status"></div>
+            <div className="admin-loading justify-content-center">
+                <span className="admin-spinner" aria-hidden="true" />
             </div>
         );
     }
@@ -66,76 +68,70 @@ export default function AdminLoginPage() {
     }
 
     return (
-        <div className="container py-5">
-            <div className="row justify-content-center py-4 py-md-5">
-                <div className="col-md-8 col-lg-5 col-xl-4">
-                    <div className="card border-0 shadow-sm p-4 p-md-5 rounded-4">
-                        <h2 className="h3 fw-bold text-center mb-4">
-                            {isForgotPassword ? 'Recuperar Contraseña' : 'Admin Login'}
-                        </h2>
+        <main className="admin-auth-wrap">
+            <LiquidGlassPanel liquid className="admin-auth-card">
+                <h2 className="admin-auth-title">
+                    {isForgotPassword ? 'Recuperar Contraseña' : 'Acceso Administrativo'}
+                </h2>
 
-                        <form onSubmit={handleSubmit}>
-                            <div className="mb-3">
-                                <label className="form-label fw-semibold">Correo Electrónico</label>
-                                <input
-                                    type="email"
-                                    required
-                                    className="form-control form-control-lg"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                />
-                            </div>
+                <form onSubmit={handleSubmit} className="lg-form">
+                    <div className="mb-3">
+                        <label className="form-label" htmlFor="login-email">Correo Electrónico</label>
+                        <input
+                            id="login-email"
+                            type="email"
+                            required
+                            className="form-control"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
 
-                            {!isForgotPassword && (
-                                <div className="mb-4">
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <label className="form-label fw-semibold mb-0">Contraseña</label>
-                                        <button
-                                            type="button"
-                                            className="btn btn-link p-0 text-decoration-none"
-                                            onClick={() => setIsForgotPassword(true)}
-                                        >
-                                            ¿Olvidó su contraseña?
-                                        </button>
-                                    </div>
-                                    <input
-                                        type="password"
-                                        required
-                                        className="form-control form-control-lg mt-2"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                    />
-                                </div>
-                            )}
-
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="btn btn-primary btn-lg w-100 fw-semibold py-3 shadow-sm mb-3"
-                            >
-                                {loading ? (
-                                    <span className="d-flex align-items-center justify-content-center gap-2">
-                                        <span className="spinner-border spinner-border-sm" role="status"></span>
-                                        Procesando...
-                                    </span>
-                                ) : (
-                                    isForgotPassword ? 'Enviar Enlace' : 'Iniciar Sesión'
-                                )}
-                            </button>
-
-                            {isForgotPassword && (
+                    {!isForgotPassword && (
+                        <div className="mb-4">
+                            <div className="admin-label-row">
+                                <label className="form-label mb-0" htmlFor="login-password">Contraseña</label>
                                 <button
                                     type="button"
-                                    className="btn btn-light btn-lg w-100 fw-semibold py-3 shadow-sm"
-                                    onClick={() => setIsForgotPassword(false)}
+                                    className="admin-link"
+                                    onClick={() => setIsForgotPassword(true)}
                                 >
-                                    Volver al Login
+                                    ¿Olvidó su contraseña?
                                 </button>
-                            )}
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
+                            </div>
+                            <input
+                                id="login-password"
+                                type="password"
+                                required
+                                className="form-control"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                        </div>
+                    )}
+
+                    <LiquidGlassButton
+                        type="submit"
+                        variant="primary"
+                        className="w-100"
+                        disabled={loading}
+                    >
+                        {loading ? 'Procesando...' : isForgotPassword ? 'Enviar Enlace' : 'Iniciar Sesión'}
+                    </LiquidGlassButton>
+
+                    {isForgotPassword && (
+                        <div className="mt-3">
+                            <LiquidGlassButton
+                                variant="ghost"
+                                className="w-100"
+                                onClick={() => setIsForgotPassword(false)}
+                            >
+                                Volver al Login
+                            </LiquidGlassButton>
+                        </div>
+                    )}
+                </form>
+            </LiquidGlassPanel>
+        </main>
     );
 }

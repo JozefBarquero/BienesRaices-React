@@ -29,7 +29,9 @@ describe('Sistema Toast', () => {
     });
 
     afterEach(() => {
-        vi.runOnlyPendingTimers();
+        act(() => {
+            vi.runOnlyPendingTimers();
+        });
         vi.useRealTimers();
     });
 
@@ -40,7 +42,10 @@ describe('Sistema Toast', () => {
             </ToastProvider>
         );
 
-        fireEvent.click(screen.getByText('Success'));
+        act(() => {
+            fireEvent.click(screen.getByText('Success'));
+        });
+
         expect(screen.getByText('Operación exitosa')).toBeInTheDocument();
         expect(screen.getByRole('status')).toBeInTheDocument();
     });
@@ -52,7 +57,10 @@ describe('Sistema Toast', () => {
             </ToastProvider>
         );
 
-        fireEvent.click(screen.getByText('Error'));
+        act(() => {
+            fireEvent.click(screen.getByText('Error'));
+        });
+
         expect(screen.getByText('Ha ocurrido un error')).toBeInTheDocument();
         expect(screen.getByRole('alert')).toBeInTheDocument();
     });
@@ -64,13 +72,16 @@ describe('Sistema Toast', () => {
             </ToastProvider>
         );
 
-        fireEvent.click(screen.getByText('Info'));
+        act(() => {
+            fireEvent.click(screen.getByText('Info'));
+        });
+
         expect(screen.getByText('Información general')).toBeInTheDocument();
 
         const closeBtn = screen.getByLabelText('Cerrar notificación');
-        fireEvent.click(closeBtn);
 
         act(() => {
+            fireEvent.click(closeBtn);
             vi.advanceTimersByTime(350);
         });
 

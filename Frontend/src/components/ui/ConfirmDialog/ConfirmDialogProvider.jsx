@@ -21,27 +21,29 @@ export const useConfirmDialog = () => {
 
 const DialogIcons = {
     danger: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
     ),
     warning: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
             <line x1="12" y1="9" x2="12" y2="13" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
     ),
     info: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
-    )
+    ),
 };
+
+const resolveIcon = (variant) => DialogIcons[variant] || DialogIcons.info;
 
 export function ConfirmDialogProvider({ children }) {
     const [state, setState] = useState(null);
@@ -68,7 +70,7 @@ export function ConfirmDialogProvider({ children }) {
                 message: options.message || '',
                 confirmText: options.confirmText || 'Confirmar',
                 cancelText: options.cancelText || 'Cancelar',
-                variant: options.variant || 'danger'
+                variant: options.variant || 'danger',
             });
             setTimeout(() => {
                 setIsShowing(true);
@@ -110,17 +112,6 @@ export function ConfirmDialogProvider({ children }) {
     };
 
     const variant = state?.variant || 'danger';
-    const confirmBtnClass = variant === 'danger'
-        ? 'btn-danger'
-        : variant === 'warning'
-            ? 'btn-warning'
-            : 'btn-primary';
-
-    const iconBadgeStyle = variant === 'danger'
-        ? { backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }
-        : variant === 'warning'
-            ? { backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }
-            : { backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' };
 
     return (
         <ConfirmDialogContext.Provider value={{ confirmDialog: openConfirm }}>
@@ -129,7 +120,7 @@ export function ConfirmDialogProvider({ children }) {
             {state && (
                 <div
                     id="confirmDialogModal"
-                    className={`modal-overlay ${isShowing ? 'show' : ''}`}
+                    className={`modal-overlay confirm-dialog confirm-dialog--${variant} ${isShowing ? 'show' : ''}`}
                     onClick={handleBackdropClick}
                     role="presentation"
                 >
@@ -138,10 +129,10 @@ export function ConfirmDialogProvider({ children }) {
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="confirmDialogTitle"
-                        aria-describedby="confirmDialogMessage"
+                        aria-describedby={state.message ? 'confirmDialogMessage' : undefined}
                     >
-                        <div className="modal-icon-badge" style={iconBadgeStyle}>
-                            {DialogIcons[variant] || DialogIcons.info}
+                        <div className="modal-icon-badge">
+                            {resolveIcon(variant)}
                         </div>
 
                         <h3 id="confirmDialogTitle" className="title-tertiary">
@@ -154,10 +145,10 @@ export function ConfirmDialogProvider({ children }) {
                             </p>
                         )}
 
-                        <div className="d-flex justify-content-center gap-3 w-100 mt-2">
+                        <div className="confirm-dialog-actions">
                             <button
                                 type="button"
-                                className="btn btn-outline-secondary px-4 py-2 rounded-3 fw-semibold flex-fill"
+                                className="confirm-btn confirm-btn--ghost"
                                 onClick={() => closeDialog(false)}
                             >
                                 {state.cancelText}
@@ -166,7 +157,7 @@ export function ConfirmDialogProvider({ children }) {
                             <button
                                 ref={confirmBtnRef}
                                 type="button"
-                                className={`btn ${confirmBtnClass} px-4 py-2 rounded-3 fw-semibold text-white flex-fill shadow-sm`}
+                                className={`confirm-btn confirm-btn--${variant}`}
                                 onClick={() => closeDialog(true)}
                             >
                                 {state.confirmText}

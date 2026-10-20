@@ -1,64 +1,33 @@
-import { useState } from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Pagination, Autoplay } from 'swiper/modules';
-import Lightbox from 'yet-another-react-lightbox';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
-import 'yet-another-react-lightbox/styles.css';
+import { lazy, Suspense, useState } from 'react';
+
+const PropertyGalleryInner = lazy(() => import('./PropertyGalleryInner'));
 
 export default function PropertyGallery({ title, image, gallery = [] }) {
     const [indexLightbox, setIndexLightbox] = useState(-1);
-    const hasMultiple = gallery && gallery.length > 1;
+    const fallbackSrc = image || gallery[0] || '';
 
     return (
-        <>
-            <div className="mb-4">
-                {hasMultiple ? (
-                    <div className="ratio ratio-21x9 rounded-4 shadow-sm overflow-hidden">
-                        <Swiper
-                            modules={[Navigation, Pagination, Autoplay]}
-                            navigation
-                            pagination={{ clickable: true }}
-                            autoplay={{
-                                delay: 3500,
-                                disableOnInteraction: false,
-                                pauseOnMouseEnter: true
-                            }}
-                            className="w-100 h-100"
-                        >
-                            {gallery.map((img, idx) => (
-                                <SwiperSlide key={idx} className="w-100 h-100">
-                                    <img
-                                        src={img}
-                                        alt={`${title} - Foto ${idx + 1}`}
-                                        className="w-100 h-100 object-fit-cover d-block"
-                                        style={{ cursor: 'pointer' }}
-                                        onClick={() => setIndexLightbox(idx)}
-                                    />
-                                </SwiperSlide>
-                            ))}
-                        </Swiper>
-                    </div>
-                ) : (
-                    <div className="ratio ratio-21x9 rounded-4 shadow-sm overflow-hidden">
+        <div className="gallery-frame lg lg--liquid w-100 overflow-hidden">
+            <div className="ratio ratio-16x9 position-relative">
+                <Suspense
+                    fallback={
                         <img
-                            src={image}
+                            src={fallbackSrc}
                             alt={title}
-                            className="w-100 h-100 object-fit-cover"
-                            style={{ cursor: 'pointer' }}
+                            className="position-absolute top-0 start-0 w-100 h-100 object-fit-cover d-block"
                             onClick={() => setIndexLightbox(0)}
                         />
-                    </div>
-                )}
+                    }
+                >
+                    <PropertyGalleryInner
+                        title={title}
+                        image={image}
+                        gallery={gallery}
+                        indexLightbox={indexLightbox}
+                        setIndexLightbox={setIndexLightbox}
+                    />
+                </Suspense>
             </div>
-
-            <Lightbox
-                open={indexLightbox >= 0}
-                index={indexLightbox}
-                close={() => setIndexLightbox(-1)}
-                slides={(gallery || []).map((src) => ({ src }))}
-            />
-        </>
+        </div>
     );
 }

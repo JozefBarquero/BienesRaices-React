@@ -1,6 +1,6 @@
 import React from 'react';
 import Toast from './Toast';
-import './toast.css';
+import '@/assets/styles/toast.css';
 
 export default function ToastContainer({ toasts = [], onClose }) {
     if (!toasts || toasts.length === 0) return null;

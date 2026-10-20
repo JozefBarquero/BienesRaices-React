@@ -16,7 +16,7 @@ export default function PropietarioSelect({ propietarios = [], value, onChange, 
     const inputRef = useRef(null);
 
     const seleccionado = useMemo(
-        () => propietarios.find(p => String(p.id) === String(value)) || null,
+        () => propietarios.find((p) => String(p.id) === String(value)) || null,
         [propietarios, value]
     );
 
@@ -100,10 +100,10 @@ export default function PropietarioSelect({ propietarios = [], value, onChange, 
         if (e.key === 'ArrowDown') {
             e.preventDefault();
             setAbierto(true);
-            setResaltado(prev => Math.min(prev + 1, filtrados.length - 1));
+            setResaltado((prev) => Math.min(prev + 1, filtrados.length - 1));
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            setResaltado(prev => Math.max(prev - 1, 0));
+            setResaltado((prev) => Math.max(prev - 1, 0));
         } else if (e.key === 'Enter') {
             if (abierto && filtrados[resaltado]) {
                 e.preventDefault();
@@ -116,7 +116,7 @@ export default function PropietarioSelect({ propietarios = [], value, onChange, 
     };
 
     return (
-        <div className="position-relative" ref={contenedorRef}>
+        <div className="admin-autocomplete" ref={contenedorRef}>
             <div className="input-group">
                 <input
                     ref={inputRef}
@@ -132,18 +132,18 @@ export default function PropietarioSelect({ propietarios = [], value, onChange, 
                 {value ? (
                     <button
                         type="button"
-                        className="btn btn-outline-secondary"
+                        className="admin-action-btn"
                         onClick={limpiar}
                         tabIndex={-1}
                         aria-label="Limpiar propietario"
                     >
-                        &times;
+                        ×
                     </button>
                 ) : (
                     <button
                         type="button"
-                        className="btn btn-outline-secondary"
-                        onClick={() => { setAbierto(v => !v); inputRef.current?.focus(); }}
+                        className="admin-action-btn"
+                        onClick={() => { setAbierto((v) => !v); inputRef.current?.focus(); }}
                         tabIndex={-1}
                         aria-label="Mostrar opciones"
                     >
@@ -153,27 +153,24 @@ export default function PropietarioSelect({ propietarios = [], value, onChange, 
             </div>
 
             {abierto && (
-                <div
-                    className="position-absolute w-100 bg-body border rounded shadow mt-1 overflow-auto"
-                    style={{ maxHeight: '260px', zIndex: 1050 }}
-                >
+                <div className="admin-autocomplete-menu">
                     {propietarios.length === 0 ? (
-                        <div className="p-3 text-muted small">
+                        <div className="admin-autocomplete-empty">
                             No hay propietarios activos. Créalos en la pestaña &quot;Propietarios&quot;.
                         </div>
                     ) : filtrados.length === 0 ? (
-                        <div className="p-3 text-muted small">Sin resultados para «{busqueda}».</div>
+                        <div className="admin-autocomplete-empty">
+                            Sin resultados para «{busqueda}».
+                        </div>
                     ) : (
                         <>
                             <button
                                 type="button"
-                                className={`d-block w-100 text-start border-0 px-3 py-2 bg-transparent border-bottom ${
-                                    !value ? 'fw-semibold text-primary' : 'text-muted'
-                                }`}
+                                className={`admin-autocomplete-option${!value ? ' highlighted' : ''}`}
                                 onClick={() => { emitir(null); setBusqueda(''); setAbierto(false); }}
                                 onMouseEnter={() => setResaltado(-1)}
                             >
-                                Sin asignar
+                                <strong>Sin asignar</strong>
                             </button>
 
                             {filtrados.map((p, idx) => {
@@ -182,22 +179,17 @@ export default function PropietarioSelect({ propietarios = [], value, onChange, 
                                     <button
                                         key={p.id}
                                         type="button"
-                                        className={`d-block w-100 text-start border-0 px-3 py-2 bg-transparent border-bottom ${
-                                            activo ? 'text-primary' : ''
-                                        }`}
-                                        style={activo ? { backgroundColor: 'var(--bs-primary-bg-subtle)' } : undefined}
+                                        className={`admin-autocomplete-option${activo ? ' highlighted' : ''}`}
                                         onClick={() => seleccionar(p)}
                                         onMouseEnter={() => setResaltado(idx)}
                                     >
-                                        <div className="fw-semibold small">
-                                            {etiquetaPropietario(p)}
-                                        </div>
-                                        <div className={`small d-flex justify-content-between ${activo ? 'text-primary-emphasis' : 'text-muted'}`}>
+                                        <strong>{etiquetaPropietario(p)}</strong>
+                                        <small>
                                             <span className="text-capitalize">
                                                 {p.tipo_persona === 'juridica' ? 'Jurídica' : 'Física'}
                                             </span>
                                             <span>{p.documento_identidad || ''}</span>
-                                        </div>
+                                        </small>
                                     </button>
                                 );
                             })}
@@ -207,7 +199,7 @@ export default function PropietarioSelect({ propietarios = [], value, onChange, 
             )}
 
             {seleccionado && !abierto && (
-                <small className="text-muted d-block mt-1">
+                <small className="admin-hint">
                     {seleccionado.tipo_persona === 'juridica' ? 'Jurídica' : 'Física'} · {seleccionado.documento_identidad}
                 </small>
             )}
