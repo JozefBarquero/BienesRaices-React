@@ -1067,6 +1067,11 @@
   .admin-modal {
     padding: 1.5rem 1.25rem;
   }
+  
+  .admin-search-select {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
