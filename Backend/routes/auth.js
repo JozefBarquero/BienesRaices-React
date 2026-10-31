@@ -9,6 +9,8 @@ import 'dotenv/config';
 
 const router = express.Router();
 
+const SITE_URL = (process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+
 export const verifyToken = (req, res, next) => {
     const token = req.cookies.adminToken;
     if (!token) return res.status(401).json({ error: 'Acceso denegado' });
@@ -125,7 +127,7 @@ router.post('/login', loginLimiter, async (req, res) => {
                 process.env.JWT_SECRET,
                 { expiresIn: '1h' }
             );
-            const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin/reset-password?token=${resetToken}`;
+            const resetLink = `${SITE_URL}/admin/reset-password?token=${resetToken}`;
 
             const fechaInicio = new Date().toLocaleString('es-CR', { timeZone: 'America/Costa_Rica' });
 
@@ -180,7 +182,7 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
 
         const user = users[0];
         const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin/reset-password?token=${token}`;
+        const resetLink = `${SITE_URL}/admin/reset-password?token=${token}`;
 
         const template = emailForgotPassword({ nombre: user.nombre, resetLink });
 

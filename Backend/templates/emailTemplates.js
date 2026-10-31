@@ -1,11 +1,12 @@
 import 'dotenv/config';
 
+const SITE_URL = (process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
 const COMPANY_NAME = process.env.COMPANY_NAME || 'Bienes Raíces';
 const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || 'San José, Costa Rica';
 const COMPANY_PHONE = process.env.COMPANY_PHONE || '+506 8888-8888';
 const COMPANY_EMAIL = process.env.EMAIL_FROM || 'contacto@bienesraices.com';
-const PRIVACY_URL = process.env.PRIVACY_URL || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/privacidad`;
-const TERMS_URL = process.env.TERMS_URL || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/terminos`;
+const PRIVACY_URL = process.env.PRIVACY_URL || `${SITE_URL}/privacidad`;
+const TERMS_URL = process.env.TERMS_URL || `${SITE_URL}/terminos`;
 const LOGO_URL = process.env.EMAIL_LOGO_URL || `${process.env.BACKEND_URL || 'http://localhost:3001'}/uploads/icon.svg`;
 const PRIMARY_COLOR = '#0f2c59';
 const ACCENT_COLOR = '#c59b27';

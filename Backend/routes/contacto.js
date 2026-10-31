@@ -7,6 +7,8 @@ import { verifyToken } from './auth.js';
 
 const router = express.Router();
 
+const SITE_URL = (process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+
 const verifyAdmin = (req, res, next) => {
     if (req.user.rol !== 'Administrador') {
         return res.status(403).json({ error: 'Acceso denegado. Se requiere rol de Administrador.' });
@@ -31,7 +33,7 @@ const notificarCreadorPropiedad = async ({ propiedadId, clienteNombre, clienteEm
         if (rows.length === 0 || !rows[0].creador_email) return;
 
         const row = rows[0];
-        const dashboardUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin/dashboard`;
+        const dashboardUrl = `${SITE_URL}/admin/dashboard`;
 
         const template = emailNuevoMensajePropiedad({
             trabajadorNombre: `${row.creador_nombre} ${row.creador_apellidos || ''}`.trim(),
