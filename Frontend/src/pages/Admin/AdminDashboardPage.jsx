@@ -218,9 +218,21 @@ export default function AdminDashboardPage() {
                 {activeTab === 'propiedades' && (
                     showForm ? (
                         <LiquidGlassPanel liquid className="admin-panel">
-                            <h2 className="admin-panel-title">
-                                {editingProperty ? 'Editar Propiedad' : 'Nueva Propiedad'}
-                            </h2>
+                            <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                                <h2 className="admin-panel-title mb-0">
+                                    {editingProperty ? 'Editar Propiedad' : 'Nueva Propiedad'}
+                                </h2>
+                                {editingProperty && (
+                                    <a
+                                        href={`/catalogo/${editingProperty.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="admin-action-btn admin-action-btn--primary"
+                                    >
+                                        Previsualizar Propiedad
+                                    </a>
+                                )}
+                            </div>
                             <PropertyForm
                                 initialData={editingProperty}
                                 onSubmit={handleFormSubmit}
@@ -295,6 +307,14 @@ export default function AdminDashboardPage() {
                                                         </td>
                                                         <td>
                                                             <div className="admin-action-group">
+                                                                <a
+                                                                    href={`/catalogo/${p.id}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="admin-action-btn"
+                                                                >
+                                                                    Previsualizar
+                                                                </a>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleEdit(p)}
@@ -361,6 +381,14 @@ export default function AdminDashboardPage() {
                                                 <div className="admin-mobile-card-price">{formatPrice(p.precio)}</div>
 
                                                 <div className="admin-mobile-card-actions">
+                                                    <a
+                                                        href={`/catalogo/${p.id}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="admin-action-btn"
+                                                    >
+                                                        Previsualizar
+                                                    </a>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleEdit(p)}

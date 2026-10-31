@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Home from '@/pages/Home';
 import ProtectedRoute from '@/routes/ProtectedRoute';
 
@@ -24,9 +24,20 @@ function RouteFallback() {
     );
 }
 
+function ScrollToTop() {
+    const { pathname } = useLocation();
+
+    useEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }, [pathname]);
+
+    return null;
+}
+
 export default function AppRoutes() {
     return (
         <Suspense fallback={<RouteFallback />}>
+            <ScrollToTop />
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/nosotros" element={<Nosotros />} />
@@ -53,4 +64,4 @@ export default function AppRoutes() {
             </Routes>
         </Suspense>
     );
-}
+}NO 

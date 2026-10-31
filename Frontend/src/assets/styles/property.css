@@ -190,6 +190,7 @@
 .property-detail {
   padding: 2.5rem 0 4rem;
   position: relative;
+  overflow-x: clip;
 }
 
 .property-detail::before {
