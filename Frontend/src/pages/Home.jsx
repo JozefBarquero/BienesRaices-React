@@ -89,7 +89,7 @@ export default function Home() {
                                             transition={{ duration: 0.6, ease: 'easeOut' }}
                                             src="/img/casa-jardin.webp"
                                             alt="Propiedad destacada"
-                                            fetchpriority="high"
+                                            fetchPriority="high"
                                         />
                                     </div>
                                     <div className="hero-float-card lg lg--soft">
