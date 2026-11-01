@@ -173,7 +173,7 @@ export default function Dashboard({ currentUser, onNavigate, onNewProperty }) {
 
     const saludo = () => {
         const h = new Date().getHours();
-        if (h < 12) return 'Buenos días';
+        if (h < 12 && h >= 6) return 'Buenos días';
         if (h < 19) return 'Buenas tardes';
         return 'Buenas noches';
     };

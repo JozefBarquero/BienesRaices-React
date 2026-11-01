@@ -80,14 +80,20 @@
   --bs-primary-rgb: 59, 130, 246;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  max-width: 100vw;
 }
 
 body {
+  min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: var(--bs-body-font-family);
@@ -228,6 +234,7 @@ h1, h2, h3, h4, h5, h6,
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.35s ease;
+  padding: 1rem;
 }
 
 .modal-overlay.show {
@@ -242,6 +249,8 @@ h1, h2, h3, h4, h5, h6,
   border-radius: 1.25rem;
   max-width: 440px;
   width: 90%;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
   text-align: center;
   border: 1px solid var(--color-border);
   box-shadow: 0 20px 25px -5px var(--color-shadow), 0 8px 10px -6px var(--color-shadow);

@@ -20,14 +20,14 @@
   },
   "dependencies": {
     "bootstrap": "^5.3.8",
-    "framer-motion": "^14.8.0",
+    "framer-motion": "^14.9.0",
     "leaflet": "^1.9.4",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.18.5",
-    "swiper": "^14.3.0",
-    "yet-another-react-lightbox": "^3.32.2"
+    "swiper": "^14.4.0",
+    "yet-another-react-lightbox": "^3.33.0"
   },
   "allowScripts": {
     "esbuild@0.28.2": true,

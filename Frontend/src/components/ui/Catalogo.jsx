@@ -16,7 +16,7 @@ export default function Catalogo() {
     return (
         <section className="py-5">
             <motion.div
-                className="container"
+                className="container overflow-hidden"
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, margin: '-100px' }}
@@ -30,7 +30,7 @@ export default function Catalogo() {
                     </p>
                 </motion.div>
 
-                <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 justify-content-center">
                     {propiedades.map((prop) => (
                         <motion.div key={prop.id} className="col" variants={fadeUp}>
                             <PropiedadCard propiedad={prop} />

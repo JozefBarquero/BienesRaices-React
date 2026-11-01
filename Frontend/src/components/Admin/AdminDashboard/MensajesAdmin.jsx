@@ -24,6 +24,12 @@ const FILTROS = [
     { value: 'inactivos', label: 'Solo inactivos' },
 ];
 
+const FILTROS_TIPO = [
+    { value: 'todas', label: 'Todas las consultas' },
+    { value: 'general', label: 'Consultas generales' },
+    { value: 'propiedad', label: 'Por propiedad' },
+];
+
 const normalizar = (str) =>
     String(str || '')
         .toLowerCase()
@@ -52,8 +58,12 @@ export default function MensajesAdmin({ currentUser }) {
     const [estadoSel, setEstadoSel] = useState('nuevo');
     const [prioridadSel, setPrioridadSel] = useState('media');
     const [asignadoSel, setAsignadoSel] = useState('');
+    
     const [busqueda, setBusqueda] = useState('');
     const [filtro, setFiltro] = useState('todos');
+    const [tipoConsulta, setTipoConsulta] = useState('todas');
+    
+    const [contactModal, setContactModal] = useState(null);
 
     const load = async () => {
         setLoading(true);
@@ -80,6 +90,9 @@ export default function MensajesAdmin({ currentUser }) {
             if (filtro === 'activos' && !m.activo) return false;
             if (filtro === 'inactivos' && m.activo) return false;
 
+            if (tipoConsulta === 'general' && m.propiedad_titulo) return false;
+            if (tipoConsulta === 'propiedad' && !m.propiedad_titulo) return false;
+
             if (!q) return true;
 
             const campos = [
@@ -94,7 +107,7 @@ export default function MensajesAdmin({ currentUser }) {
 
             return campos.includes(q);
         });
-    }, [mensajes, busqueda, filtro]);
+    }, [mensajes, busqueda, filtro, tipoConsulta]);
 
     const abrirDetalle = (m) => {
         setDetalle(m);
@@ -139,6 +152,7 @@ export default function MensajesAdmin({ currentUser }) {
         const confirmed = await confirmDialog({
             title: 'Desactivar mensaje',
             message: '¿Seguro que deseas desactivar este mensaje?',
+            confirmType: 'danger',
             confirmText: 'Desactivar',
             variant: 'danger',
         });
@@ -151,6 +165,20 @@ export default function MensajesAdmin({ currentUser }) {
         } catch (err) {
             toast.error(err.message);
         }
+    };
+
+    const getWhatsAppLink = (telefono, nombre) => {
+        if (!telefono) return null;
+        const cleanPhone = telefono.replace(/\D/g, '');
+        const text = encodeURIComponent(`Hola ${nombre}, le escribimos de Bienes Raíces Horquetas de Sarapiquí en respuesta a su consulta.`);
+        return `https://wa.me/${cleanPhone}?text=${text}`;
+    };
+
+    const getMailtoLink = (email, nombre) => {
+        if (!email) return null;
+        const subject = encodeURIComponent('Respuesta a su consulta - Bienes Raíces Horquetas');
+        const body = encodeURIComponent(`Hola ${nombre},\n\nHemos recibido su mensaje y nos gustaría ponernos en contacto con usted.\n\nSaludos cordiales,\nEquipo de Bienes Raíces.`);
+        return `mailto:${email}?subject=${subject}&body=${body}`;
     };
 
     if (loading) {
@@ -171,6 +199,9 @@ export default function MensajesAdmin({ currentUser }) {
                 filter={filtro}
                 onFilterChange={setFiltro}
                 filterOptions={FILTROS}
+                secondaryFilter={tipoConsulta}
+                onSecondaryFilterChange={setTipoConsulta}
+                secondaryFilterOptions={FILTROS_TIPO}
             />
 
             {mensajesFiltrados.length === 0 ? (
@@ -197,9 +228,10 @@ export default function MensajesAdmin({ currentUser }) {
                                         <td>
                                             <div className="admin-cell-main">{m.nombre_cliente}</div>
                                             <div className="admin-cell-sub">{m.email_cliente}</div>
+                                            {m.telefono_cliente && <div className="admin-cell-sub">{m.telefono_cliente}</div>}
                                         </td>
                                         <td className="admin-cell-sub">
-                                            {m.propiedad_titulo || 'Consulta general'}
+                                            {m.propiedad_titulo || <span className="text-muted">General</span>}
                                         </td>
                                         <td className="admin-cell-sub" style={{ maxWidth: '240px' }}>
                                             <div className="text-truncate">{m.mensaje}</div>
@@ -225,7 +257,7 @@ export default function MensajesAdmin({ currentUser }) {
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => registrarContacto(m.id)}
+                                                    onClick={() => setContactModal(m)}
                                                     className="admin-action-btn admin-action-btn--success"
                                                 >
                                                     Contactar
@@ -260,8 +292,10 @@ export default function MensajesAdmin({ currentUser }) {
                                 </div>
                                 <h5 className="admin-mobile-card-title">{m.nombre_cliente}</h5>
                                 <p className="admin-mobile-card-sub text-break">{m.email_cliente}</p>
-                                {m.propiedad_titulo && (
-                                    <p className="admin-mobile-card-sub">Propiedad: {m.propiedad_titulo}</p>
+                                {m.propiedad_titulo ? (
+                                    <p className="admin-mobile-card-sub text-break">Propiedad: {m.propiedad_titulo}</p>
+                                ) : (
+                                    <p className="admin-mobile-card-sub text-muted">Consulta general</p>
                                 )}
                                 <p className="admin-mobile-card-sub mt-2">{m.mensaje}</p>
                                 <div className="admin-mobile-card-actions">
@@ -274,7 +308,7 @@ export default function MensajesAdmin({ currentUser }) {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => registrarContacto(m.id)}
+                                        onClick={() => setContactModal(m)}
                                         className="admin-action-btn admin-action-btn--success"
                                     >
                                         Contactar
@@ -310,8 +344,10 @@ export default function MensajesAdmin({ currentUser }) {
                             {detalle.telefono_cliente && (
                                 <p><strong>Teléfono:</strong> {detalle.telefono_cliente}</p>
                             )}
-                            {detalle.propiedad_titulo && (
+                            {detalle.propiedad_titulo ? (
                                 <p><strong>Propiedad:</strong> {detalle.propiedad_titulo}</p>
+                            ) : (
+                                <p><strong>Tipo:</strong> Consulta general</p>
                             )}
                             <p><strong>Mensaje:</strong></p>
                             <p style={{ color: 'var(--color-muted)' }}>{detalle.mensaje}</p>
@@ -382,6 +418,77 @@ export default function MensajesAdmin({ currentUser }) {
                             </LiquidGlassButton>
                             <LiquidGlassButton variant="primary" onClick={guardarDetalle}>
                                 Guardar
+                            </LiquidGlassButton>
+                        </div>
+                    </LiquidGlassPanel>
+                </div>
+            )}
+
+            {contactModal && (
+                <div
+                    className="admin-modal-backdrop"
+                    onClick={(e) => { if (e.target === e.currentTarget) setContactModal(null); }}
+                >
+                    <LiquidGlassPanel liquid className="admin-modal" style={{ maxWidth: '420px' }}>
+                        <div className="admin-modal-header">
+                            <h5 className="admin-modal-title">Contactar a {contactModal.nombre_cliente}</h5>
+                            <button
+                                type="button"
+                                className="admin-modal-close"
+                                onClick={() => setContactModal(null)}
+                                aria-label="Cerrar"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="admin-modal-body">
+                            <div className="d-flex flex-column gap-2 mb-4">
+                                {contactModal.email_cliente && (
+                                    <div className="d-flex align-items-center gap-2 small text-muted">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/></svg>
+                                        <span>{contactModal.email_cliente}</span>
+                                    </div>
+                                )}
+                                {contactModal.telefono_cliente && (
+                                    <div className="d-flex align-items-center gap-2 small text-muted">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122l-2.19.547a1.745 1.745 0 0 1-1.657-.459L5.482 8.062a1.745 1.745 0 0 1-.46-1.657l.548-2.19a.678.678 0 0 0-.122-.58L3.654 1.328zM1.884.511a1.745 1.745 0 0 1 2.612.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/></svg>
+                                        <span>{contactModal.telefono_cliente}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="d-flex flex-column gap-3">
+                                <a
+                                    href={getWhatsAppLink(contactModal.telefono_cliente, contactModal.nombre_cliente)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="admin-action-btn admin-action-btn--success w-100 py-2"
+                                    onClick={() => {
+                                        registrarContacto(contactModal.id);
+                                        setContactModal(null);
+                                    }}
+                                    style={{ pointerEvents: contactModal.telefono_cliente ? 'auto' : 'none', opacity: contactModal.telefono_cliente ? 1 : 0.5 }}
+                                >
+                                    Enviar WhatsApp
+                                </a>
+                                <a
+                                    href={getMailtoLink(contactModal.email_cliente, contactModal.nombre_cliente)}
+                                    className="admin-action-btn admin-action-btn--primary w-100 py-2"
+                                    onClick={() => {
+                                        registrarContacto(contactModal.id);
+                                        setContactModal(null);
+                                    }}
+                                    style={{ pointerEvents: contactModal.email_cliente ? 'auto' : 'none', opacity: contactModal.email_cliente ? 1 : 0.5 }}
+                                >
+                                    Enviar Correo Electrónico
+                                </a>
+                            </div>
+                        </div>
+
+                        <div className="admin-modal-footer">
+                            <LiquidGlassButton variant="ghost" onClick={() => setContactModal(null)}>
+                                Cancelar
                             </LiquidGlassButton>
                         </div>
                     </LiquidGlassPanel>

@@ -28,8 +28,8 @@ export default function PropiedadCard({ propiedad }) {
                     {propiedad.titulo}
                 </h3>
 
-                <p className="prop-card-location" title={propiedad.ubicacion_completa}>
-                    {propiedad.ubicacion_completa}
+                <p className="prop-card-location" title={propiedad.ubicacion}>
+                    {propiedad.ubicacion}
                 </p>
 
                 <div className="prop-card-meta">

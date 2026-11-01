@@ -10,8 +10,8 @@ export default function Footer() {
     return (
         <footer className="site-footer">
             <div className="container site-footer-inner">
-                <div className="row gy-5">
-                    <div className="col-lg-5">
+                <div className="row gy-4 gy-lg-5">
+                    <div className="col-12 col-lg-5">
                         <Link to="/" className="site-brand">
                             <span className="site-brand-mark">
                                 <img src="/ico/icon.svg" alt="" />
@@ -36,7 +36,7 @@ export default function Footer() {
                         </div>
                     </div>
 
-                    <div className="col-6 col-lg-3">
+                    <div className="col-12 col-sm-6 col-lg-3">
                         <h6 className="site-footer-title">Legal</h6>
                         <ul className="site-footer-links">
                             <li><Link to="/privacidad">Política de Privacidad</Link></li>
@@ -45,7 +45,7 @@ export default function Footer() {
                         </ul>
                     </div>
 
-                    <div className="col-6 col-lg-4">
+                    <div className="col-12 col-sm-6 col-lg-4">
                         <h6 className="site-footer-title">Proyecto Académico</h6>
                         <p className="site-footer-credits">
                             <strong>Curso:</strong> Programación III<br />

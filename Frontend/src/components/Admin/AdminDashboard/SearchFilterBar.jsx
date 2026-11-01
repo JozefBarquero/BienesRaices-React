@@ -5,6 +5,9 @@ export default function SearchFilterBar({
     filter,
     onFilterChange,
     filterOptions,
+    secondaryFilter,
+    onSecondaryFilterChange,
+    secondaryFilterOptions,
 }) {
     return (
         <div className="admin-search-wrap">
@@ -40,6 +43,18 @@ export default function SearchFilterBar({
                     onChange={(e) => onFilterChange(e.target.value)}
                 >
                     {filterOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                </select>
+            )}
+
+            {secondaryFilterOptions && (
+                <select
+                    className="admin-search-select"
+                    value={secondaryFilter}
+                    onChange={(e) => onSecondaryFilterChange(e.target.value)}
+                >
+                    {secondaryFilterOptions.map((opt) => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                 </select>

@@ -39,7 +39,7 @@ export default function CatalogPage() {
                 const precios = propiedadesNormalizadas
                     .map((p) => Number(p.precio))
                     .filter((n) => !isNaN(n) && n > 0);
-                
+
                 if (precios.length > 0) {
                     const min = Math.min(...precios);
                     const max = Math.max(...precios);
@@ -71,7 +71,7 @@ export default function CatalogPage() {
         let result = propiedades.filter((p) => {
             const matchText =
                 p.titulo.toLowerCase().includes(filtro.toLowerCase()) ||
-                (p.ubicacion_completa && p.ubicacion_completa.toLowerCase().includes(filtro.toLowerCase())) ||
+                (p.ubicacion && p.ubicacion.toLowerCase().includes(filtro.toLowerCase())) ||
                 (p.tipo_inmueble_texto && p.tipo_inmueble_texto.toLowerCase().includes(filtro.toLowerCase()));
 
             const matchOperacion = operacion === 'todas' || p.tipo_operacion.toLowerCase() === operacion;
@@ -117,7 +117,7 @@ export default function CatalogPage() {
 
     return (
         <section className="page-hero">
-            <div className="container">
+            <div className="container overflow-hidden">
                 <motion.div
                     className="catalog-header"
                     initial={{ opacity: 0, y: -20 }}
@@ -240,9 +240,9 @@ export default function CatalogPage() {
                     </div>
                 ) : propiedadesFiltradas.length > 0 ? (
                     <>
-                        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+                        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5 justify-content-center">
                             {propiedadesPaginadas.map((p) => (
-                                <div className="col d-flex" key={p.id}>
+                                <div className="col d-flex" key={p.id} style={{ minWidth: 0 }}>
                                     <PropiedadCard propiedad={p} />
                                 </div>
                             ))}
@@ -250,11 +250,13 @@ export default function CatalogPage() {
 
                         {totalPaginas > 1 && (
                             <nav aria-label="Navegación de páginas" className="d-flex justify-content-center mt-4">
-                                <ul className="pagination">
+                                <ul className="pagination flex-wrap justify-content-center gap-1">
                                     <li className={`page-item ${paginaActual === 1 ? 'disabled' : ''}`}>
                                         <button
+                                            type="button"
                                             className="page-link"
                                             onClick={() => setPaginaActual(p => Math.max(1, p - 1))}
+                                            aria-label="Página anterior"
                                         >
                                             Anterior
                                         </button>
@@ -262,8 +264,11 @@ export default function CatalogPage() {
                                     {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((num) => (
                                         <li key={num} className={`page-item ${paginaActual === num ? 'active' : ''}`}>
                                             <button
+                                                type="button"
                                                 className="page-link"
                                                 onClick={() => setPaginaActual(num)}
+                                                aria-label={`Página ${num}`}
+                                                aria-current={paginaActual === num ? 'page' : undefined}
                                             >
                                                 {num}
                                             </button>
@@ -271,8 +276,10 @@ export default function CatalogPage() {
                                     ))}
                                     <li className={`page-item ${paginaActual === totalPaginas ? 'disabled' : ''}`}>
                                         <button
+                                            type="button"
                                             className="page-link"
                                             onClick={() => setPaginaActual(p => Math.min(totalPaginas, p + 1))}
+                                            aria-label="Página siguiente"
                                         >
                                             Siguiente
                                         </button>
