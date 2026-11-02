@@ -1,8 +1,19 @@
+import { memo } from 'react';
 import { formatPrice } from '@/utils/formatters';
 import { useCurrency } from '@/context/CurrencyContext';
 import { LiquidGlassCard, LiquidGlassButton } from '@/components/ui/LiquidGlass';
 
-export default function PropiedadCard({ propiedad }) {
+const ESTADO_LABELS = {
+    vendida: 'Vendida',
+    alquilada: 'Alquilada',
+};
+
+const ESTADO_ICONS = {
+    vendida: '✓',
+    alquilada: '✓',
+};
+
+function PropiedadCard({ propiedad }) {
     const { userCurrency, convertPrice } = useCurrency();
 
     const convertedAmount = convertPrice(propiedad.precio, propiedad.moneda, userCurrency);
@@ -11,16 +22,37 @@ export default function PropiedadCard({ propiedad }) {
         convertedAmount !== null &&
         convertedAmount !== undefined;
 
+    const estadoComercial = propiedad.estado_comercial;
+    const mostrarEstadoComercial = estadoComercial && estadoComercial !== 'disponible';
+
     return (
-        <LiquidGlassCard liquid className="prop-card" interactive>
+        <LiquidGlassCard
+            liquid
+            className={`prop-card${mostrarEstadoComercial ? ' prop-card--closed' : ''}`}
+            interactive
+        >
             <div className="prop-card-img">
-                {propiedad.destacada === 1 && (
+                {propiedad.destacada === 1 && !mostrarEstadoComercial && (
                     <span className="prop-card-badge">Destacada</span>
                 )}
-                {propiedad.tipo_operacion && (
+                {!mostrarEstadoComercial && propiedad.tipo_operacion && (
                     <span className="prop-card-type">{propiedad.tipo_operacion}</span>
                 )}
-                <img src={propiedad.imagen} alt={propiedad.titulo} loading="lazy" />
+                <img
+                    src={propiedad.imagen}
+                    alt={propiedad.titulo}
+                    loading="lazy"
+                    decoding="async"
+                    className={mostrarEstadoComercial ? 'prop-card-img--dim' : ''}
+                />
+                {mostrarEstadoComercial && (
+                    <div className={`prop-card-status-banner prop-card-status-banner--${estadoComercial}`}>
+                        <span className="prop-card-status-banner-icon" aria-hidden="true">
+                            {ESTADO_ICONS[estadoComercial] || '•'}
+                        </span>
+                        <span>{ESTADO_LABELS[estadoComercial] || estadoComercial}</span>
+                    </div>
+                )}
             </div>
 
             <div className="prop-card-body">
@@ -56,3 +88,5 @@ export default function PropiedadCard({ propiedad }) {
         </LiquidGlassCard>
     );
 }
+
+export default memo(PropiedadCard);

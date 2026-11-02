@@ -12,13 +12,13 @@ const NAV_LINKS = [
 ];
 
 export default function Header() {
-    const [isDark, setIsDark] = useState(false);
+    const [isDark, setIsDark] = useState(true);
     const [menuOpen, setMenuOpen] = useState(false);
     const navigate = useNavigate();
     const { userCurrency, setUserCurrency } = useCurrency();
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem('theme') || 'light';
+        const savedTheme = localStorage.getItem('theme') || 'dark';
         setIsDark(savedTheme === 'dark');
         document.documentElement.setAttribute('data-bs-theme', savedTheme);
     }, []);

@@ -114,8 +114,8 @@ router.post('/', verifyToken, (req, res, next) => {
              (titulo, descripcion_corta, descripcion_larga, ubicacion, direccion_exacta, latitud, longitud,
               tipo_inmueble_id, tipo_operacion, precio, moneda, tipo_precio, habitaciones, banos,
               estacionamientos, area_construida, area_terreno, imagen_principal, url_video,
-              destacada, activa, creado_por, propietario_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              destacada, activa, estado_comercial, creado_por, propietario_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'disponible', ?, ?)`,
             [
                 data.titulo, data.descripcion_corta, data.descripcion_larga, data.ubicacion, data.direccion_exacta,
                 data.latitud || null, data.longitud || null, data.tipo_inmueble_id || null, data.tipo_operacion || 'venta',

@@ -292,6 +292,92 @@ export const api = {
             return await res.json();
         }
     },
+    clientes: {
+        getAll: async () => {
+            const res = await customFetch(`${API_URL}/clientes`, fetchOptions(), 'Error al obtener clientes');
+            return await res.json();
+        },
+        getById: async (id) => {
+            const res = await customFetch(`${API_URL}/clientes/${id}`, fetchOptions(), 'Cliente no encontrado');
+            return await res.json();
+        },
+        create: async (data) => {
+            const res = await customFetch(
+                `${API_URL}/clientes`,
+                fetchOptions({
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                }),
+                'Error al crear cliente'
+            );
+            return await res.json();
+        },
+        update: async (id, data) => {
+            const res = await customFetch(
+                `${API_URL}/clientes/${id}`,
+                fetchOptions({
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                }),
+                'Error al actualizar cliente'
+            );
+            return await res.json();
+        },
+        delete: async (id) => {
+            const res = await customFetch(
+                `${API_URL}/clientes/${id}`,
+                fetchOptions({
+                    method: 'DELETE'
+                }),
+                'Error al desactivar cliente'
+            );
+            return await res.json();
+        }
+    },
+    transacciones: {
+        getAll: async () => {
+            const res = await customFetch(`${API_URL}/transacciones`, fetchOptions(), 'Error al obtener transacciones');
+            return await res.json();
+        },
+        getById: async (id) => {
+            const res = await customFetch(`${API_URL}/transacciones/${id}`, fetchOptions(), 'Transacción no encontrada');
+            return await res.json();
+        },
+        create: async (data) => {
+            const res = await customFetch(
+                `${API_URL}/transacciones`,
+                fetchOptions({
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                }),
+                'Error al crear transacción'
+            );
+            return await res.json();
+        },
+        cerrar: async (id) => {
+            const res = await customFetch(
+                `${API_URL}/transacciones/${id}/cerrar`,
+                fetchOptions({
+                    method: 'PATCH'
+                }),
+                'Error al cerrar transacción'
+            );
+            return await res.json();
+        },
+        cancelar: async (id) => {
+            const res = await customFetch(
+                `${API_URL}/transacciones/${id}/cancelar`,
+                fetchOptions({
+                    method: 'PATCH'
+                }),
+                'Error al cancelar transacción'
+            );
+            return await res.json();
+        }
+    },
     auth: {
         needsBootstrap: async () => {
             const res = await fetch(`${API_URL}/auth/needs-bootstrap`, fetchOptions());

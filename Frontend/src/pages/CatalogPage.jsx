@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useMemo, useDeferredValue } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { api, getImageUrl } from '@/services/api';
 import PropiedadCard from '@/components/ui/PropiedadCard';
 
@@ -19,6 +19,11 @@ export default function CatalogPage() {
 
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 9;
+
+    const shouldReduceMotion = useReducedMotion();
+    const deferredFiltro = useDeferredValue(filtro);
+    const deferredMinPrecio = useDeferredValue(minPrecio);
+    const deferredMaxPrecio = useDeferredValue(maxPrecio);
 
     useEffect(() => {
         if (!localStorage.getItem('hideCurrencyDisclaimer')) {
@@ -70,16 +75,16 @@ export default function CatalogPage() {
     const propiedadesFiltradas = useMemo(() => {
         let result = propiedades.filter((p) => {
             const matchText =
-                p.titulo.toLowerCase().includes(filtro.toLowerCase()) ||
-                (p.ubicacion && p.ubicacion.toLowerCase().includes(filtro.toLowerCase())) ||
-                (p.tipo_inmueble_texto && p.tipo_inmueble_texto.toLowerCase().includes(filtro.toLowerCase()));
+                p.titulo.toLowerCase().includes(deferredFiltro.toLowerCase()) ||
+                (p.ubicacion && p.ubicacion.toLowerCase().includes(deferredFiltro.toLowerCase())) ||
+                (p.tipo_inmueble_texto && p.tipo_inmueble_texto.toLowerCase().includes(deferredFiltro.toLowerCase()));
 
             const matchOperacion = operacion === 'todas' || p.tipo_operacion.toLowerCase() === operacion;
             const matchTipo = tipoInmueble === 'todos' || p.tipo_inmueble_texto === tipoInmueble;
 
             const price = Number(p.precio) || 0;
-            const matchMin = price >= minPrecio;
-            const matchMax = price <= maxPrecio;
+            const matchMin = price >= deferredMinPrecio;
+            const matchMax = price <= deferredMaxPrecio;
 
             return matchText && matchOperacion && matchTipo && matchMin && matchMax;
         });
@@ -91,7 +96,7 @@ export default function CatalogPage() {
         });
 
         return result;
-    }, [propiedades, filtro, operacion, tipoInmueble, minPrecio, maxPrecio, orden]);
+    }, [propiedades, deferredFiltro, operacion, tipoInmueble, deferredMinPrecio, deferredMaxPrecio, orden]);
 
     const totalPaginas = Math.ceil(propiedadesFiltradas.length / itemsPorPagina);
     const indexUltimo = paginaActual * itemsPorPagina;
@@ -115,15 +120,18 @@ export default function CatalogPage() {
         return new Intl.NumberFormat('es-CR', { maximumFractionDigits: 0 }).format(val);
     };
 
+    const headerMotion = shouldReduceMotion
+        ? {}
+        : {
+              initial: { opacity: 0, y: -20 },
+              animate: { opacity: 1, y: 0 },
+              transition: { duration: 0.6 },
+          };
+
     return (
         <section className="page-hero">
             <div className="container overflow-hidden">
-                <motion.div
-                    className="catalog-header"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                >
+                <motion.div className="catalog-header" {...headerMotion}>
                     <span className="section-badge">Portafolio</span>
                     <h1 className="catalog-title">Catálogo de Propiedades</h1>
                     <p className="catalog-subtitle">
@@ -134,8 +142,8 @@ export default function CatalogPage() {
                 {showDisclaimer && (
                     <motion.div
                         className="catalog-disclaimer lg lg--soft"
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={shouldReduceMotion ? false : { opacity: 0, y: -10 }}
+                        animate={shouldReduceMotion ? false : { opacity: 1, y: 0 }}
                         transition={{ duration: 0.4 }}
                     >
                         <span className="catalog-disclaimer-icon" aria-hidden="true">!</span>

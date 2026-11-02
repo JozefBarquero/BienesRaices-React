@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import cron from 'node-cron';
 
 import tiposInmuebleRoutes from './routes/tipos-inmueble.js';
 import propiedadesRoutes from './routes/propiedades.js';
@@ -10,7 +11,10 @@ import authRoutes from './routes/auth.js';
 import iaRoutes from './routes/ia.js';
 import usuariosRoutes from './routes/usuarios.js';
 import propietariosRoutes from './routes/propietarios.js';
+import clientesRoutes from './routes/clientes.js';
+import transaccionesRoutes from './routes/transacciones.js';
 import { globalLimiter } from './middlewares/rateLimiters.js';
+import db from './config/db.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -45,6 +49,25 @@ app.use('/api/auth', authRoutes);
 app.use('/api/ia', iaRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/propietarios', propietariosRoutes);
+app.use('/api/clientes', clientesRoutes);
+app.use('/api/transacciones', transaccionesRoutes);
+
+cron.schedule('0 2 * * *', async () => {
+  try {
+    const [result] = await db.query(
+      `UPDATE propiedades
+       SET activa = FALSE
+       WHERE fecha_desactivacion_programada IS NOT NULL
+         AND fecha_desactivacion_programada <= NOW()
+         AND activa = TRUE`
+    );
+    if (result.affectedRows > 0) {
+      console.log(`[CRON] Propiedades desactivadas automáticamente: ${result.affectedRows}`);
+    }
+  } catch (error) {
+    console.error('[CRON] Error al desactivar propiedades:', error.message);
+  }
+});
 
 process.on('uncaughtException', (err) => { console.error('Error crítico:', err); });
 process.on('unhandledRejection', (reason) => { console.error('Promesa rechazada:', reason); });

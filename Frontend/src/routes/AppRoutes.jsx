@@ -14,6 +14,7 @@ const AdminDashboardPage = lazy(() => import('@/pages/Admin/AdminDashboardPage')
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const Privacidad = lazy(() => import('@/pages/Privacidad'));
 const Terminos = lazy(() => import('@/pages/Terminos'));
+const PoliticaAlmacenamiento = lazy(() => import('@/pages/PoliticaAlmacenamiento'));
 
 function RouteFallback() {
     return (
@@ -61,6 +62,7 @@ export default function AppRoutes() {
 
                 <Route path="/privacidad" element={<Privacidad />} />
                 <Route path="/terminos" element={<Terminos />} />
+                <Route path="/politica-almacenamiento" element={<PoliticaAlmacenamiento />} />
             </Routes>
         </Suspense>
     );

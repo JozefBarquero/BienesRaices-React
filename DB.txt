@@ -1,4 +1,3 @@
--- 1. BASE DE DATOS
 CREATE DATABASE IF NOT EXISTS bienes_raices_db
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
@@ -20,7 +19,6 @@ CREATE TABLE IF NOT EXISTS personas (
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- 2. USUARIOS CON ROLES
 CREATE TABLE IF NOT EXISTS trabajadores (
     id VARCHAR(30) PRIMARY KEY,
     persona_id INT NOT NULL UNIQUE,
@@ -36,7 +34,6 @@ CREATE TABLE IF NOT EXISTS trabajadores (
     FOREIGN KEY (persona_id) REFERENCES personas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 3. TIPOS DE INMUEBLE
 CREATE TABLE IF NOT EXISTS tipos_inmueble (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL UNIQUE
@@ -50,63 +47,49 @@ CREATE TABLE IF NOT EXISTS propietarios (
     FOREIGN KEY (persona_id) REFERENCES personas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 4. PROPIEDADES
 CREATE TABLE IF NOT EXISTS propiedades (
     id INT AUTO_INCREMENT PRIMARY KEY,
     titulo VARCHAR(200) NOT NULL,
     descripcion_corta VARCHAR(300) NOT NULL,
     descripcion_larga TEXT NOT NULL,
-    
-    -- Ubicación y Geolocalización
-    ubicacion VARCHAR(255) NOT NULL,        
-    direccion_exacta VARCHAR(255) NOT NULL,    
-    latitud DECIMAL(10, 8) NULL,                
-    longitud DECIMAL(11, 8) NULL,                
-    
-    -- Tipo y Operación
+    ubicacion VARCHAR(255) NOT NULL,
+    direccion_exacta VARCHAR(255) NOT NULL,
+    latitud DECIMAL(10, 8) NULL,
+    longitud DECIMAL(11, 8) NULL,
     tipo_inmueble_id INT NULL,
     tipo_operacion ENUM('venta', 'alquiler', 'ambos') NOT NULL DEFAULT 'venta',
-    
-    -- Precios y Divisa
     precio DECIMAL(12, 2) NOT NULL,
     moneda ENUM('USD', 'CRC', 'EUR') NOT NULL DEFAULT 'USD',
     tipo_precio ENUM('fijo', 'negociable') NOT NULL DEFAULT 'fijo',
-    
-    -- Características Físicas
     habitaciones TINYINT UNSIGNED NULL,
-    banos DECIMAL(3,1) UNSIGNED NULL,          
+    banos DECIMAL(3,1) UNSIGNED NULL,
     estacionamientos TINYINT UNSIGNED DEFAULT 0,
-    area_construida DECIMAL(10,2) UNSIGNED NULL, 
-    area_terreno DECIMAL(10,2) UNSIGNED NULL,    
-    
-    -- Contenido Multimedia
+    area_construida DECIMAL(10,2) UNSIGNED NULL,
+    area_terreno DECIMAL(10,2) UNSIGNED NULL,
     imagen_principal VARCHAR(500) NOT NULL,
-    url_video VARCHAR(500) NULL,                
-    
-    -- Control, Visibilidad, Creador y Estado
-    destacada BOOLEAN DEFAULT FALSE,          
-    activa BOOLEAN DEFAULT TRUE,                
+    url_video VARCHAR(500) NULL,
+    destacada BOOLEAN DEFAULT FALSE,
+    activa BOOLEAN DEFAULT TRUE,
+    estado_comercial ENUM('disponible', 'vendida', 'alquilada') NOT NULL DEFAULT 'disponible',
+    fecha_cambio_estado TIMESTAMP NULL,
+    fecha_desactivacion_programada TIMESTAMP NULL,
     creado_por VARCHAR(30) NULL,
     propietario_id INT NULL,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Claves Foráneas
     FOREIGN KEY (tipo_inmueble_id) REFERENCES tipos_inmueble(id) ON DELETE SET NULL,
     FOREIGN KEY (creado_por) REFERENCES trabajadores(id) ON DELETE SET NULL,
     FOREIGN KEY (propietario_id) REFERENCES propietarios(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
--- 5. GALERÍA DE IMÁGENES
 CREATE TABLE IF NOT EXISTS imagenes_propiedad (
     id INT AUTO_INCREMENT PRIMARY KEY,
     propiedad_id INT NOT NULL,
     url_imagen VARCHAR(500) NOT NULL,
-    orden INT DEFAULT 0,                        
+    orden INT DEFAULT 0,
     FOREIGN KEY (propiedad_id) REFERENCES propiedades(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 6. MENSAJES DE CONTACTO
 CREATE TABLE IF NOT EXISTS mensajes_contacto (
     id INT AUTO_INCREMENT PRIMARY KEY,
     propiedad_id INT NULL,
@@ -127,7 +110,44 @@ CREATE TABLE IF NOT EXISTS mensajes_contacto (
     FOREIGN KEY (asignado_a) REFERENCES trabajadores(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
--- 7. ÍNDICES DE RENDIMIENTO
+CREATE TABLE IF NOT EXISTS clientes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    persona_id INT NOT NULL UNIQUE,
+    tipo_cliente ENUM('comprador', 'inquilino', 'inversionista') NOT NULL,
+    presupuesto_min DECIMAL(12,2) NULL,
+    presupuesto_max DECIMAL(12,2) NULL,
+    moneda_presupuesto ENUM('USD', 'CRC', 'EUR') NOT NULL DEFAULT 'USD',
+    zonas_interes TEXT NULL,
+    tipo_inmueble_preferido INT NULL,
+    notas_seguimiento TEXT NULL,
+    activo BOOLEAN DEFAULT TRUE,
+    creado_por VARCHAR(30) NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (persona_id) REFERENCES personas(id) ON DELETE CASCADE,
+    FOREIGN KEY (tipo_inmueble_preferido) REFERENCES tipos_inmueble(id) ON DELETE SET NULL,
+    FOREIGN KEY (creado_por) REFERENCES trabajadores(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS transacciones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    propiedad_id INT NOT NULL,
+    cliente_id INT NOT NULL,
+    tipo_transaccion ENUM('venta', 'alquiler') NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NULL,
+    plazo_meses INT NULL,
+    monto_total DECIMAL(12,2) NOT NULL,
+    moneda ENUM('USD', 'CRC', 'EUR') DEFAULT 'USD',
+    metodo_pago ENUM('escrow', 'transferencia', 'financiamiento', 'mixto', 'deposito_garantia') NOT NULL,
+    estado ENUM('en_proceso', 'cerrada', 'cancelada') DEFAULT 'en_proceso',
+    notas TEXT NULL,
+    creado_por VARCHAR(30) NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (propiedad_id) REFERENCES propiedades(id) ON DELETE RESTRICT,
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE RESTRICT,
+    FOREIGN KEY (creado_por) REFERENCES trabajadores(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 CREATE INDEX idx_propiedades_estado ON propiedades(activa, destacada, tipo_operacion);
 CREATE INDEX idx_propiedades_precio ON propiedades(moneda, precio);
 CREATE INDEX idx_propiedades_ubicacion ON propiedades(ubicacion);
@@ -137,8 +157,10 @@ CREATE INDEX idx_propiedades_propietario ON propiedades(propietario_id);
 CREATE INDEX idx_imagenes_orden ON imagenes_propiedad(propiedad_id, orden);
 CREATE INDEX idx_mensajes_estado ON mensajes_contacto(estado, activo);
 CREATE INDEX idx_mensajes_asignado ON mensajes_contacto(asignado_a);
+CREATE INDEX idx_propiedades_desactivacion ON propiedades(fecha_desactivacion_programada);
+CREATE INDEX idx_transacciones_propiedad ON transacciones(propiedad_id);
+CREATE INDEX idx_transacciones_cliente ON transacciones(cliente_id);
 
--- 8. DATOS INICIALES
 INSERT IGNORE INTO tipos_inmueble (nombre) VALUES
 ('Casa'),
 ('Apartamento'),

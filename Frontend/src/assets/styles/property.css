@@ -7,6 +7,8 @@
   min-width: 0;
   padding: 0;
   overflow: hidden;
+  content-visibility: auto;
+  contain-intrinsic-size: 320px;
 }
 
 .prop-card-img {
@@ -23,7 +25,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
 }
 
 .lg--interactive:hover .prop-card-img img {
@@ -42,6 +44,52 @@
   );
   pointer-events: none;
   z-index: 1;
+}
+
+.prop-card-img--dim {
+  filter: grayscale(45%) brightness(0.88);
+}
+
+.prop-card--closed.lg--interactive:hover .prop-card-img img {
+  transform: none;
+}
+
+.prop-card-status-banner {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffffff;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.prop-card-status-banner--vendida {
+  background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%);
+}
+
+.prop-card-status-banner--alquilada {
+  background: linear-gradient(135deg, #c2410c 0%, #9a3412 100%);
+}
+
+.prop-card-status-banner-icon {
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.prop-card--closed .prop-card-cta {
+  opacity: 0.85;
 }
 
 .prop-card-badge {
@@ -108,6 +156,7 @@
   margin: 0;
   line-height: 1.3;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -1013,11 +1062,23 @@
   .prop-card-body {
     padding: 1rem 1.1rem 1.15rem;
   }
+
+  .prop-card-status-banner {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    gap: 0.35rem;
+  }
+
+  .prop-card-status-banner-icon {
+    font-size: 0.95rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .prop-card-img img,
-  .lg--interactive:hover .prop-card-img img {
+  .lg--interactive:hover .prop-card-img img,
+  .prop-card--closed.lg--interactive:hover .prop-card-img img {
     transition: none;
     transform: none;
   }

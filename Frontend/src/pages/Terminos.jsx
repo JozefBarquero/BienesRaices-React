@@ -47,6 +47,9 @@ export default function Terminos() {
                             para venta o alquiler, así como la recepción de consultas de clientes interesados. La información mostrada es
                             de carácter informativo y no constituye una oferta vinculante en los términos del artículo 46 del Código de Comercio de Costa Rica.
                         </p>
+                        <p>
+                            El sitio integra un módulo de inteligencia artificial (Gemini IA) que puede generar resúmenes o respuestas automatizadas sobre las propiedades. Dicha información es de carácter orientativo y no sustituye la verificación profesional ni la debida diligencia del interesado.
+                        </p>
                     </Section>
 
                     <Section title="3. Requisitos de uso">
@@ -57,6 +60,7 @@ export default function Terminos() {
                             <li>No intentar acceder a áreas restringidas, alterar el funcionamiento del sitio ni interferir con su seguridad.</li>
                             <li>No reproducir, distribuir ni explotar comercialmente el contenido sin autorización previa y por escrito.</li>
                             <li>Ser mayor de edad y tener capacidad legal para contratar.</li>
+                            <li>No utilizar el módulo de inteligencia artificial para generar contenido ilegal, difamatorio o engañoso.</li>
                         </ul>
                     </Section>
 
@@ -68,8 +72,7 @@ export default function Terminos() {
                         </p>
                         <p>
                             El usuario no adquiere ningún derecho de propiedad intelectual por el simple uso del sitio. Los contenidos de
-                            terceros (imágenes de Pexels, íconos de Simple Icons, carruseles de Swiper) se utilizan bajo sus respectivas licencias
-                            y se atribuyen en el pie de página.
+                            terceros (imágenes de Pexels, íconos de Simple Icons, carruseles de Swiper, mapas de OpenStreetMap, datos de Open-Meteo y Exchange Rate API) se utilizan bajo sus respectivas licencias y se atribuyen en el pie de página o en la documentación correspondiente.
                         </p>
                     </Section>
 
@@ -81,7 +84,10 @@ export default function Terminos() {
                         </p>
                         <p>
                             Las imágenes son ilustrativas y pueden no reflejar exactamente el estado actual del inmueble. Los precios están sujetos
-                            a cambio sin previo aviso y pueden variar según la moneda y el tipo de cambio vigente.
+                            a cambio sin previo aviso y pueden variar según la moneda y el tipo de cambio vigente (proporcionado por Exchange Rate API).
+                        </p>
+                        <p>
+                            Los resúmenes o respuestas generados por el módulo de inteligencia artificial (Gemini IA) son de carácter auxiliar y no constituyen asesoría legal, financiera ni inmobiliaria vinculante.
                         </p>
                     </Section>
 
@@ -92,16 +98,14 @@ export default function Terminos() {
                         <ul>
                             <li>Daños directos, indirectos, incidentales o consecuentes derivados del uso o imposibilidad de uso del sitio.</li>
                             <li>Interrupciones del servicio, errores técnicos, virus o accesos no autorizados ajenos a nuestro control razonable.</li>
-                            <li>Decisiones tomadas por el usuario basándose exclusivamente en la información publicada.</li>
-                            <li>Contenido de sitios de terceros enlazados desde nuestras páginas.</li>
+                            <li>Decisiones tomadas por el usuario basándose exclusivamente en la información publicada o en los resultados generados por la inteligencia artificial.</li>
+                            <li>Contenido de sitios de terceros enlazados desde nuestras páginas (redes sociales, mapas, servicios meteorológicos, etc.).</li>
                         </ul>
                     </Section>
 
-                    <Section title="7. Enlaces a terceros">
+                    <Section title="7. Enlaces y servicios de terceros">
                         <p>
-                            El sitio puede contener enlaces a sitios externos (redes sociales, herramientas de mapas, proveedores de servicios).
-                            No controlamos ni nos hacemos responsables por sus políticas de privacidad, contenido o prácticas. Le recomendamos
-                            revisar los términos de cada sitio antes de interactuar con ellos.
+                            El sitio integra servicios de terceros como OpenStreetMap (mapas), Open-Meteo (meteorología), Exchange Rate API (tipos de cambio), Gemini IA (inteligencia artificial) y Cloudflare (seguridad y rendimiento). No controlamos ni nos hacemos responsables por sus políticas de privacidad, contenido o prácticas. Le recomendamos revisar los términos de cada servicio antes de interactuar con ellos.
                         </p>
                     </Section>
 

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useConsent } from '@/context/ConsentContext';
 
 const Section = ({ title, children }) => (
     <section className="mb-5">
@@ -9,6 +10,8 @@ const Section = ({ title, children }) => (
 );
 
 export default function Privacidad() {
+    const { openBanner } = useConsent();
+
     return (
         <motion.main
             className="py-5"
@@ -48,7 +51,7 @@ export default function Privacidad() {
                         <ul>
                             <li><strong className="text-body-emphasis">Formularios de contacto:</strong> nombre completo, correo electrónico, teléfono y el contenido del mensaje.</li>
                             <li><strong className="text-body-emphasis">Cuentas internas de trabajo:</strong> nombre, apellidos, cédula, correo corporativo, teléfono, dirección, cargo y fechas laborales.</li>
-                            <li><strong className="text-body-emphasis">Datos de navegación:</strong> dirección IP, tipo de navegador, sistema operativo y páginas visitadas, recopilados a través de registros del servidor con finalidad de seguridad.</li>
+                            <li><strong className="text-body-emphasis">Datos de navegación:</strong> dirección IP, tipo de navegador, sistema operativo y páginas visitadas, recopilados a través de registros del servidor y almacenamiento local (ver sección 8).</li>
                         </ul>
                     </Section>
 
@@ -60,6 +63,7 @@ export default function Privacidad() {
                             <li>Administrar la publicación y el mantenimiento de propiedades listadas en el sitio.</li>
                             <li>Garantizar la seguridad del sitio, prevenir fraudes y abusos.</li>
                             <li>Cumplir con obligaciones legales aplicables en Costa Rica.</li>
+                            <li>Mejorar la experiencia del usuario mediante el análisis agregado del uso del sitio (solo con su consentimiento).</li>
                         </ul>
                         <p>No realizamos perfilado automatizado ni tomamos decisiones automatizadas con efectos legales sobre el usuario.</p>
                     </Section>
@@ -67,7 +71,7 @@ export default function Privacidad() {
                     <Section title="4. Base legal">
                         <p>El tratamiento se fundamenta en:</p>
                         <ul>
-                            <li><strong className="text-body-emphasis">Consentimiento:</strong> al enviar un formulario de contacto.</li>
+                            <li><strong className="text-body-emphasis">Consentimiento:</strong> al enviar un formulario de contacto o al aceptar el almacenamiento no esencial.</li>
                             <li><strong className="text-body-emphasis">Ejecución de un contrato:</strong> relación laboral o de servicios.</li>
                             <li><strong className="text-body-emphasis">Interés legítimo:</strong> seguridad del sitio y prevención de abusos.</li>
                             <li><strong className="text-body-emphasis">Obligación legal:</strong> cuando la normativa costarricense lo exija.</li>
@@ -76,10 +80,7 @@ export default function Privacidad() {
 
                     <Section title="5. Conservación de datos">
                         <p>
-                            Los datos de contacto se conservan durante <strong>24 meses</strong> desde su recepción, salvo que el usuario solicite
-                            su supresión antes. Los datos laborales se conservan mientras dure la relación laboral y hasta <strong>5 años</strong> después
-                            de su finalización, conforme a las obligaciones contables y fiscales costarricenses. Los registros del servidor se eliminan
-                            automáticamente tras <strong>12 meses</strong>.
+                            Los datos de contacto se conservan durante <strong>24 meses</strong> desde su recepción, salvo que el usuario solicite su supresión antes. Los datos laborales se conservan mientras dure la relación laboral y hasta <strong>5 años</strong> después de su finalización, conforme a las obligaciones contables y fiscales costarricenses. Los registros del servidor se eliminan automáticamente tras <strong>12 meses</strong>. Las preferencias guardadas en el navegador se conservan hasta por 12 meses, y las analíticas y de terceros según lo indicado en la Política de Cookies.
                         </p>
                     </Section>
 
@@ -89,11 +90,11 @@ export default function Privacidad() {
                         </p>
                         <ul>
                             <li>Proveedores de infraestructura de hosting y correo electrónico, sujetos a contratos de encargado del tratamiento.</li>
+                            <li>Servicios de terceros integrados en el sitio (OpenStreetMap, Open-Meteo, Exchange Rate API, Gemini IA, Cloudflare), cuando usted haya consentido su uso o cuando sean estrictamente necesarios para la funcionalidad solicitada. Estos proveedores pueden procesar datos fuera de Costa Rica.</li>
                             <li>Autoridades públicas cuando exista requerimiento legal debidamente fundamentado.</li>
                         </ul>
                         <p>
-                            Cuando un proveedor procese datos fuera del Espacio Económico Europeo o Costa Rica, se aplicarán
-                            cláusulas contractuales tipo u otros mecanismos de transferencia reconocidos internacionalmente.
+                            Cuando un proveedor procese datos fuera de Costa Rica, se aplicarán cláusulas contractuales tipo u otros mecanismos de transferencia reconocidos internacionalmente.
                         </p>
                     </Section>
 
@@ -115,22 +116,22 @@ export default function Privacidad() {
                         </p>
                     </Section>
 
-                    <Section title="8. Cookies y tecnologías similares">
+                    <Section title="8. Almacenamiento local y tecnologías similares">
                         <p>
-                            Este sitio utiliza cookies y almacenamiento local estrictamente necesarios para el funcionamiento
-                            de la autenticación de usuarios internos (cookie <code>adminToken</code>, con atributos <code>HttpOnly</code>,{' '}
-                            <code>Secure</code> y <code>SameSite</code>). Estas cookies están exentas de consentimiento por ser imprescindibles.
+                            Este sitio utiliza almacenamiento local del navegador y tecnologías similares para garantizar su funcionamiento, recordar sus preferencias (moneda, tema) y, con su consentimiento, analizar el uso del sitio. La cookie de sesión <code>adminToken</code> es estrictamente necesaria y está exenta de consentimiento por ser imprescindible.
                         </p>
                         <p>
-                            Puede gestionar sus preferencias sobre cookies no esenciales desde el enlace{' '}
+                            Puede aceptar, rechazar o configurar el almacenamiento no esencial desde nuestro panel de preferencias, disponible al acceder al sitio y a través del enlace «Configurar Cookies» en el pie de página. Para más detalles, consulte nuestra{' '}
+                            <Link to="/politica-almacenamiento" className="link-primary">Política de Cookies</Link>.
+                        </p>
+                        <p>
                             <button
                                 type="button"
                                 className="btn btn-link p-0 align-baseline"
-                                onClick={() => window.dispatchEvent(new Event('open-cookie-settings'))}
+                                onClick={openBanner}
                             >
-                                «Configurar cookies»
-                            </button>{' '}
-                            disponible en el pie de página.
+                                Abrir panel de preferencias
+                            </button>
                         </p>
                     </Section>
 

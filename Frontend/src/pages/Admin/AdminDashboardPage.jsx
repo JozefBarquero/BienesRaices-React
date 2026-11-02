@@ -8,6 +8,8 @@ import Dashboard from '@/components/Admin/AdminDashboard/Dashboard';
 import UsuariosAdmin from '@/components/Admin/AdminDashboard/UsuariosAdmin';
 import PropietariosAdmin from '@/components/Admin/AdminDashboard/PropietariosAdmin';
 import MensajesAdmin from '@/components/Admin/AdminDashboard/MensajesAdmin';
+import ClientesAdmin from '@/components/Admin/AdminDashboard/ClientesAdmin';
+import TransaccionesAdmin from '@/components/Admin/AdminDashboard/TransaccionesAdmin';
 import SearchFilterBar from '@/components/Admin/AdminDashboard/SearchFilterBar';
 import { LiquidGlassPanel, LiquidGlassButton } from '@/components/ui/LiquidGlass';
 import { formatPrice } from '@/utils/formatters';
@@ -23,14 +25,72 @@ const FILTROS_PROPIEDADES = [
     { value: 'todas', label: 'Todas' },
     { value: 'activas', label: 'Solo activas' },
     { value: 'inactivas', label: 'Solo inactivas' },
+    { value: 'disponibles', label: 'Disponibles' },
+    { value: 'vendidas', label: 'Vendidas' },
+    { value: 'alquiladas', label: 'Alquiladas' },
 ];
 
 const TABS = [
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'propiedades', label: 'Propiedades' },
     { key: 'propietarios', label: 'Propietarios' },
+    { key: 'clientes', label: 'Clientes' },
+    { key: 'transacciones', label: 'Ventas / Alquileres' },
     { key: 'mensajes', label: 'Mensajes' },
 ];
+
+const ESTADO_COMERCIAL_LABELS = {
+    disponible: 'Disponible',
+    vendida: 'Vendida',
+    alquilada: 'Alquilada',
+};
+
+const diasParaDesactivar = (fechaStr) => {
+    if (!fechaStr) return null;
+    const ahora = new Date();
+    const objetivo = new Date(fechaStr);
+    if (isNaN(objetivo.getTime())) return null;
+    const diff = Math.ceil((objetivo - ahora) / (1000 * 60 * 60 * 24));
+    return diff < 0 ? 0 : diff;
+};
+
+const rowTint = (estadoComercial) => {
+    if (estadoComercial === 'vendida') return { backgroundColor: 'rgba(185, 28, 28, 0.05)' };
+    if (estadoComercial === 'alquilada') return { backgroundColor: 'rgba(194, 65, 12, 0.05)' };
+    return undefined;
+};
+
+const renderEstadoComercial = (p) => {
+    const estado = p.estado_comercial || 'disponible';
+    const dias = diasParaDesactivar(p.fecha_desactivacion_programada);
+
+    if (estado === 'disponible') {
+        return <span className="admin-badge admin-badge--neutral">Disponible</span>;
+    }
+
+    const esVendida = estado === 'vendida';
+    const badgeClass = esVendida ? 'admin-badge--danger' : 'admin-badge--warning';
+    const textClass = esVendida ? 'text-danger-emphasis' : 'text-warning-emphasis';
+
+    return (
+        <>
+            <span className={`admin-badge ${badgeClass}`}>
+                ✓ {ESTADO_COMERCIAL_LABELS[estado]}
+            </span>
+            {p.activa ? (
+                dias !== null && (
+                    <span className={`d-block small mt-1 fw-semibold ${textClass}`}>
+                        Se desactiva en {dias} día{dias === 1 ? '' : 's'}
+                    </span>
+                )
+            ) : (
+                <span className="d-block small text-body-secondary mt-1">
+                    Ya desactivada
+                </span>
+            )}
+        </>
+    );
+};
 
 export default function AdminDashboardPage() {
     const navigate = useNavigate();
@@ -77,6 +137,9 @@ export default function AdminDashboardPage() {
         return propiedades.filter((p) => {
             if (filtro === 'activas' && !p.activa) return false;
             if (filtro === 'inactivas' && p.activa) return false;
+            if (filtro === 'disponibles' && p.estado_comercial !== 'disponible') return false;
+            if (filtro === 'vendidas' && p.estado_comercial !== 'vendida') return false;
+            if (filtro === 'alquiladas' && p.estado_comercial !== 'alquilada') return false;
 
             if (!q) return true;
 
@@ -277,24 +340,26 @@ export default function AdminDashboardPage() {
                                                     <th className="text-center">ID</th>
                                                     <th>Título</th>
                                                     <th>Operación</th>
+                                                    <th>Estado comercial</th>
                                                     <th>Tipo</th>
                                                     <th>Propietario</th>
                                                     <th>Precio</th>
-                                                    <th className="text-center">Estado</th>
+                                                    <th className="text-center">Activa</th>
                                                     <th className="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {propiedadesFiltradas.map((p) => (
-                                                    <tr key={p.id}>
+                                                    <tr key={p.id} style={rowTint(p.estado_comercial)}>
                                                         <td className="text-center fw-bold">#{p.id}</td>
                                                         <td className="admin-cell-main">{p.titulo}</td>
                                                         <td className="text-capitalize">{p.tipo_operacion}</td>
+                                                        <td>{renderEstadoComercial(p)}</td>
                                                         <td>{p.tipo_inmueble_texto}</td>
                                                         <td className="admin-cell-sub">
                                                             {p.propietario_razon_social || `${p.propietario_nombre || ''} ${p.propietario_apellidos || ''}`.trim() || '—'}
                                                         </td>
-                                                        <td className="fw-semibold">{formatPrice(p.precio)}</td>
+                                                        <td className="fw-semibold">{formatPrice(p.precio, p.moneda)}</td>
                                                         <td className="text-center">
                                                             {p.activa ? (
                                                                 <span className="admin-badge admin-badge--success">Activa</span>
@@ -349,7 +414,11 @@ export default function AdminDashboardPage() {
 
                                     <div className="admin-mobile-list">
                                         {propiedadesFiltradas.map((p) => (
-                                            <div key={p.id} className="admin-mobile-card lg lg--soft">
+                                            <div
+                                                key={p.id}
+                                                className="admin-mobile-card lg lg--soft"
+                                                style={rowTint(p.estado_comercial)}
+                                            >
                                                 <div className="admin-mobile-card-row">
                                                     <div className="d-flex gap-2">
                                                         <span className="admin-badge admin-badge--neutral">#{p.id}</span>
@@ -377,8 +446,12 @@ export default function AdminDashboardPage() {
                                                     <strong style={{ color: 'var(--color-heading)' }}>Propietario:</strong>{' '}
                                                     {p.propietario_razon_social || `${p.propietario_nombre || ''} ${p.propietario_apellidos || ''}`.trim() || '—'}
                                                 </p>
+                                                <p className="admin-mobile-card-sub">
+                                                    <strong style={{ color: 'var(--color-heading)' }}>Estado comercial:</strong>{' '}
+                                                    {renderEstadoComercial(p)}
+                                                </p>
 
-                                                <div className="admin-mobile-card-price">{formatPrice(p.precio)}</div>
+                                                <div className="admin-mobile-card-price">{formatPrice(p.precio, p.moneda)}</div>
 
                                                 <div className="admin-mobile-card-actions">
                                                     <a
@@ -424,6 +497,10 @@ export default function AdminDashboardPage() {
                 )}
 
                 {activeTab === 'propietarios' && <PropietariosAdmin />}
+
+                {activeTab === 'clientes' && <ClientesAdmin />}
+
+                {activeTab === 'transacciones' && <TransaccionesAdmin currentUser={currentUser} />}
 
                 {activeTab === 'mensajes' && <MensajesAdmin currentUser={currentUser} />}
 

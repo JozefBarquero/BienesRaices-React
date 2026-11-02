@@ -1,11 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useConsent } from '@/context/ConsentContext';
 import '@/assets/styles/layout.css';
 
 export default function Footer() {
-    const abrirCookies = (e) => {
-        e.preventDefault();
-        window.dispatchEvent(new Event('open-cookie-settings'));
-    };
+    const { openBanner } = useConsent();
 
     return (
         <footer className="site-footer">
@@ -41,7 +39,12 @@ export default function Footer() {
                         <ul className="site-footer-links">
                             <li><Link to="/privacidad">Política de Privacidad</Link></li>
                             <li><Link to="/terminos">Términos y Condiciones</Link></li>
-                            <li><a href="#" onClick={abrirCookies}>Configurar Cookies</a></li>
+                            <li><Link to="/politica-almacenamiento">Política de Cookies</Link></li>
+                            <li>
+                                <button type="button" className="site-footer-link-btn" onClick={openBanner}>
+                                    Configurar Cookies
+                                </button>
+                            </li>
                         </ul>
                     </div>
 
