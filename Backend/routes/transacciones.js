@@ -1,12 +1,39 @@
 import express from 'express';
 import db from '../config/db.js';
 import { verifyToken } from './auth.js';
+import { broadcast } from '../sse/catalogoBus.js';
 
 const router = express.Router();
 
 const METODOS_PAGO_VALIDOS = ['escrow', 'transferencia', 'financiamiento', 'mixto', 'deposito_garantia'];
 
 router.use(verifyToken);
+
+const getPropiedadCompleta = async (id) => {
+    const [rows] = await db.query(`
+        SELECT p.*,
+               ti.nombre AS tipo_inmueble_texto,
+               prop.id AS propietario_ref_id,
+               per.nombre AS propietario_nombre,
+               per.apellidos AS propietario_apellidos,
+               per.razon_social AS propietario_razon_social,
+               per.documento_identidad AS propietario_documento,
+               JSON_ARRAYAGG(i.url_imagen) AS imagenes_secundarias
+        FROM propiedades p
+        LEFT JOIN tipos_inmueble ti ON p.tipo_inmueble_id = ti.id
+        LEFT JOIN propietarios prop ON p.propietario_id = prop.id
+        LEFT JOIN personas per ON prop.persona_id = per.id
+        LEFT JOIN imagenes_propiedad i ON p.id = i.propiedad_id
+        WHERE p.id = ?
+        GROUP BY p.id
+    `, [id]);
+    if (rows.length === 0) return null;
+    const row = rows[0];
+    return {
+        ...row,
+        imagenes_secundarias: row.imagenes_secundarias[0] === null ? [] : row.imagenes_secundarias
+    };
+};
 
 router.get('/', async (req, res) => {
     try {
@@ -57,6 +84,9 @@ router.post('/', async (req, res) => {
     if (!METODOS_PAGO_VALIDOS.includes(metodo_pago)) {
         return res.status(400).json({ error: 'Método de pago inválido.' });
     }
+    if (tipo_transaccion === 'alquiler' && !plazo_meses) {
+        return res.status(400).json({ error: 'Para alquileres debe indicar el plazo en meses.' });
+    }
 
     const conexion = await db.getConnection();
     try {
@@ -88,11 +118,6 @@ router.post('/', async (req, res) => {
         );
 
         const transaccionId = result.insertId;
-
-        if (tipo_transaccion === 'alquiler' && !plazo_meses) {
-            await conexion.rollback();
-            return res.status(400).json({ error: 'Para alquileres debe indicar el plazo en meses.' });
-        }
 
         await conexion.commit();
         res.status(201).json({ success: true, id: transaccionId });
@@ -142,6 +167,12 @@ router.patch('/:id/cerrar', async (req, res) => {
         );
 
         await conexion.commit();
+
+        const propiedadCompleta = await getPropiedadCompleta(propiedad_id);
+        if (propiedadCompleta) {
+            broadcast('propiedad:actualizada', propiedadCompleta);
+        }
+
         res.json({ success: true, message: 'Transacción cerrada. La propiedad se desactivará automáticamente en 7 días.' });
     } catch (error) {
         await conexion.rollback();

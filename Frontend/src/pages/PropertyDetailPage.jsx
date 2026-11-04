@@ -13,6 +13,7 @@ import {
     PropertyVideo,
     PropertyContactForm,
 } from '@/components/common/property';
+import useCatalogoSSE from '@/hooks/useCatalogoSSE';
 
 export default function PropertyDetailPage() {
     const { id } = useParams();
@@ -20,6 +21,34 @@ export default function PropertyDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [notFound, setNotFound] = useState(false);
+
+    useCatalogoSSE({
+        onPropiedadActualizada: (data) => {
+            if (String(data.id) !== String(id)) return;
+            if (!(data.activa === 1 || data.activa === true)) {
+                setNotFound(true);
+                return;
+            }
+            const urlPrincipal = getImageUrl(data.imagen_principal);
+            const urlsSecundarias = data.imagenes_secundarias
+                ? data.imagenes_secundarias.map(getImageUrl)
+                : [];
+            const galeriaCompleta = [urlPrincipal, ...urlsSecundarias].filter(Boolean);
+            setPropiedad({
+                ...data,
+                imagen: urlPrincipal,
+                galeria: galeriaCompleta,
+            });
+        },
+        onPropiedadEstado: ({ id: propId, activa }) => {
+            if (String(propId) !== String(id)) return;
+            if (!activa) setNotFound(true);
+        },
+        onPropiedadDesactivada: ({ id: propId }) => {
+            if (String(propId) !== String(id)) return;
+            setNotFound(true);
+        },
+    });
 
     useEffect(() => {
         const fetchPropiedad = async () => {

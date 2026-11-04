@@ -13,7 +13,9 @@ import usuariosRoutes from './routes/usuarios.js';
 import propietariosRoutes from './routes/propietarios.js';
 import clientesRoutes from './routes/clientes.js';
 import transaccionesRoutes from './routes/transacciones.js';
+import sseRoutes from './routes/sse.js';
 import { globalLimiter } from './middlewares/rateLimiters.js';
+import { broadcast } from './sse/catalogoBus.js';
 import db from './config/db.js';
 
 const app = express();
@@ -40,6 +42,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use('/uploads', express.static('uploads'));
 
+app.use('/api/sse', sseRoutes);
 app.use('/api', globalLimiter);
 
 app.use('/api/tipos-inmueble', tiposInmuebleRoutes);
@@ -54,6 +57,14 @@ app.use('/api/transacciones', transaccionesRoutes);
 
 cron.schedule('0 2 * * *', async () => {
   try {
+    const [antes] = await db.query(
+      `SELECT id FROM propiedades
+       WHERE fecha_desactivacion_programada IS NOT NULL
+         AND fecha_desactivacion_programada <= NOW()
+         AND activa = TRUE`
+    );
+    if (antes.length === 0) return;
+
     const [result] = await db.query(
       `UPDATE propiedades
        SET activa = FALSE
@@ -61,7 +72,11 @@ cron.schedule('0 2 * * *', async () => {
          AND fecha_desactivacion_programada <= NOW()
          AND activa = TRUE`
     );
+
     if (result.affectedRows > 0) {
+      for (const fila of antes) {
+        broadcast('propiedad:estado', { id: fila.id, activa: false });
+      }
       console.log(`[CRON] Propiedades desactivadas automáticamente: ${result.affectedRows}`);
     }
   } catch (error) {

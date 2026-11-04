@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo, useDeferredValue } from 'react';
+import { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { api, getImageUrl } from '@/services/api';
 import PropiedadCard from '@/components/ui/PropiedadCard';
+import useCatalogoSSE from '@/hooks/useCatalogoSSE';
 
 export default function CatalogPage() {
     const [propiedades, setPropiedades] = useState([]);
@@ -25,6 +26,47 @@ export default function CatalogPage() {
     const deferredMinPrecio = useDeferredValue(minPrecio);
     const deferredMaxPrecio = useDeferredValue(maxPrecio);
 
+    const handlePropiedadCreada = useCallback((nuevaPropiedad) => {
+        setPropiedades((prev) => {
+            const existe = prev.some((p) => String(p.id) === String(nuevaPropiedad.id));
+            if (existe) return prev;
+            return [...prev, { ...nuevaPropiedad, imagen: getImageUrl(nuevaPropiedad.imagen_principal) }];
+        });
+    }, []);
+
+    const handlePropiedadActualizada = useCallback((propiedadActualizada) => {
+        setPropiedades((prev) => {
+            const existe = prev.some((p) => String(p.id) === String(propiedadActualizada.id));
+            if (!existe) {
+                return [...prev, { ...propiedadActualizada, imagen: getImageUrl(propiedadActualizada.imagen_principal) }];
+            }
+            return prev.map((p) =>
+                String(p.id) === String(propiedadActualizada.id)
+                    ? { ...propiedadActualizada, imagen: getImageUrl(propiedadActualizada.imagen_principal) }
+                    : p
+            );
+        });
+    }, []);
+
+    const handlePropiedadDesactivada = useCallback(({ id }) => {
+        setPropiedades((prev) =>
+            prev.map((p) => (String(p.id) === String(id) ? { ...p, activa: 0 } : p))
+        );
+    }, []);
+
+    const handlePropiedadEstado = useCallback(({ id, activa }) => {
+        setPropiedades((prev) =>
+            prev.map((p) => (String(p.id) === String(id) ? { ...p, activa: activa ? 1 : 0 } : p))
+        );
+    }, []);
+
+    useCatalogoSSE({
+        onPropiedadCreada: handlePropiedadCreada,
+        onPropiedadActualizada: handlePropiedadActualizada,
+        onPropiedadDesactivada: handlePropiedadDesactivada,
+        onPropiedadEstado: handlePropiedadEstado,
+    });
+
     useEffect(() => {
         if (!localStorage.getItem('hideCurrencyDisclaimer')) {
             setShowDisclaimer(true);
@@ -33,15 +75,14 @@ export default function CatalogPage() {
         const fetchPropiedades = async () => {
             try {
                 const data = await api.propiedades.getAll();
-                const propiedadesNormalizadas = data
-                    .filter((p) => p.activa)
-                    .map((p) => ({
-                        ...p,
-                        imagen: getImageUrl(p.imagen_principal),
-                    }));
+                const propiedadesNormalizadas = data.map((p) => ({
+                    ...p,
+                    imagen: getImageUrl(p.imagen_principal),
+                }));
                 setPropiedades(propiedadesNormalizadas);
 
                 const precios = propiedadesNormalizadas
+                    .filter((p) => p.activa === 1 || p.activa === true)
                     .map((p) => Number(p.precio))
                     .filter((n) => !isNaN(n) && n > 0);
 
@@ -68,12 +109,19 @@ export default function CatalogPage() {
     }, [filtro, minPrecio, maxPrecio, operacion, tipoInmueble, orden]);
 
     const tiposDisponibles = useMemo(() => {
-        const tipos = new Set(propiedades.map((p) => p.tipo_inmueble_texto).filter(Boolean));
+        const tipos = new Set(
+            propiedades
+                .filter((p) => p.activa === 1 || p.activa === true)
+                .map((p) => p.tipo_inmueble_texto)
+                .filter(Boolean)
+        );
         return Array.from(tipos).sort();
     }, [propiedades]);
 
     const propiedadesFiltradas = useMemo(() => {
         let result = propiedades.filter((p) => {
+            if (!(p.activa === 1 || p.activa === true)) return false;
+
             const matchText =
                 p.titulo.toLowerCase().includes(deferredFiltro.toLowerCase()) ||
                 (p.ubicacion && p.ubicacion.toLowerCase().includes(deferredFiltro.toLowerCase())) ||
