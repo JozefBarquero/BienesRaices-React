@@ -133,11 +133,13 @@ router.post('/login', loginLimiter, async (req, res) => {
 
             const template = emailLoginAlert({ nombre: admin.nombre, fechaInicio, resetLink });
 
-            await transporter.sendMail({
+            transporter.sendMail({
                 from: process.env.EMAIL_FROM,
                 to: admin.email,
                 subject: template.subject,
                 html: template.html
+            }).catch((err) => {
+                console.error('[MAIL] Error enviando alerta de login:', err.message);
             });
 
             res.cookie('adminToken', token, {
