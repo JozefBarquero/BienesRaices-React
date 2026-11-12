@@ -34,8 +34,12 @@ export const csrfProtection = (allowedOrigins) => (req, res, next) => {
     const cookieToken = req.cookies?.['XSRF-TOKEN'];
     const headerToken = req.headers?.['x-xsrf-token'];
 
-    if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-        return res.status(403).json({ error: 'Token CSRF inválido o ausente.' });
+    if (!headerToken) {
+        return res.status(403).json({ error: 'Token CSRF ausente.' });
+    }
+
+    if (cookieToken && cookieToken !== headerToken) {
+        return res.status(403).json({ error: 'Token CSRF no coincide.' });
     }
 
     if (!verifyCsrfToken(headerToken)) {
@@ -44,4 +48,3 @@ export const csrfProtection = (allowedOrigins) => (req, res, next) => {
 
     next();
 };
-
