@@ -5,7 +5,7 @@ import { uploadMiddleware, procesarYGuardarImagen } from '../utils/imageProcesso
 import { verifyToken } from './auth.js';
 import { broadcast } from '../sse/catalogoBus.js';
 import { uploadLimiter } from '../middlewares/rateLimiters.js';
-import { PropertySchema } from '@bienesraices/shared';
+import { PropertySchema } from '../schemas/index.js';
 
 const router = express.Router();
 

@@ -9,4 +9,3 @@ export const ContactoSchema = z.object({
     origen: z.string().trim().default('web'),
     prioridad: z.enum(['baja', 'media', 'alta']).default('media')
 });
-

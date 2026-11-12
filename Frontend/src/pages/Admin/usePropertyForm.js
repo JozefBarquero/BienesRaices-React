@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api, BACKEND_URL } from '@/services/api';
 import { DATOS_UBICACION } from '@/data/ubicaciones';
-import { PropertySchema } from '@bienesraices/shared';
+import { PropertySchema } from '@/schemas/index.js';
 import { toast } from '@/components/ui/Toast';
 
 /**

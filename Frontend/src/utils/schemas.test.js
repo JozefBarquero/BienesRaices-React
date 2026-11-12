@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PropertySchema, ContactoSchema } from '@bienesraices/shared';
+import { PropertySchema, ContactoSchema } from '@/schemas/index.js';
 
 describe('PropertySchema', () => {
     const validData = {
@@ -75,4 +75,3 @@ describe('ContactoSchema', () => {
         expect(res.success).toBe(false);
     });
 });
-

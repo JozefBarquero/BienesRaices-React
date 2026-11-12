@@ -33,4 +33,3 @@ export const PropertySchema = z.object({
     message: 'El área construida no puede ser mayor que el área total del terreno.',
     path: ['area_construida']
 });
-

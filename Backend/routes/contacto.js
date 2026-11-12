@@ -4,7 +4,7 @@ import transporter from '../config/mailer.js';
 import { emailNuevoMensajePropiedad } from '../templates/emailTemplates.js';
 import { contactLimiter } from '../middlewares/rateLimiters.js';
 import { verifyToken } from './auth.js';
-import { ContactoSchema } from '@bienesraices/shared';
+import { ContactoSchema } from '../schemas/index.js';
 
 const router = express.Router();
 
