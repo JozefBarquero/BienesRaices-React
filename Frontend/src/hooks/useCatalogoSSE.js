@@ -1,6 +1,11 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+let API_URL = import.meta.env.VITE_API_URL || '/api';
+
+if (typeof window !== 'undefined' && window.location.protocol === 'https:' && API_URL.startsWith('http://')) {
+    API_URL = API_URL.replace('http://', 'https://');
+}
+
 const MAX_BACKOFF_MS = 10000;
 const HEARTBEAT_TIMEOUT_MS = 45000;
 const STUCK_CONNECTING_MS = 5000;
@@ -92,7 +97,7 @@ export default function useCatalogoSSE(callbacks, onReconnect, isFetchingRef) {
             teardown();
 
             const url = `${API_URL}/sse/catalogo?t=${Date.now()}`;
-            const newEs = new EventSource(url);
+            const newEs = new EventSource(url, { withCredentials: true });
             es = newEs;
             eventSourceRef.current = newEs;
             lastActivity = Date.now();
