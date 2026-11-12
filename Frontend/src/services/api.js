@@ -3,6 +3,8 @@ import { toast } from '@/components/ui/Toast';
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 const API_URL = import.meta.env.VITE_API_URL;
 
+let csrfTokenMemory = '';
+
 export const getImageUrl = (path) => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
@@ -27,21 +29,38 @@ const toFormData = (data) => {
     return formData;
 };
 
-const getCsrfToken = () => {
-    if (typeof document === 'undefined') return '';
-    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-    return match ? decodeURIComponent(match[1]) : '';
+const getCsrfToken = async () => {
+    if (typeof document !== 'undefined') {
+        const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+        if (match) return decodeURIComponent(match[1]);
+    }
+    
+    if (csrfTokenMemory) return csrfTokenMemory;
+
+    try {
+        const res = await fetch(`${API_URL}/auth/csrf-token`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.token) {
+            csrfTokenMemory = data.token;
+        }
+    } catch (error) {
+        console.error('Error al obtener CSRF token', error);
+    }
+    
+    return csrfTokenMemory;
 };
 
-const fetchOptions = (options = {}) => {
+const fetchOptions = async (options = {}) => {
     const headers = { ...(options.headers || {}) };
     const method = (options.method || 'GET').toUpperCase();
+    
     if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
-        const token = getCsrfToken();
+        const token = await getCsrfToken();
         if (token) {
             headers['X-XSRF-TOKEN'] = token;
         }
     }
+    
     return {
         ...options,
         headers,
@@ -66,13 +85,15 @@ const handleResponse = async (res, defaultMessage = 'Error en la solicitud') => 
         try {
             const data = await res.clone().json();
             if (data?.error) {
-                msg = data.error;
+                msg = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
             } else if (data?.message) {
                 msg = data.message;
             }
         } catch {
+            msg = `Error del servidor (${res.status}): ${res.statusText}`;
         }
         toast.error(msg);
+        console.error('Error detallado del servidor:', msg);
         const err = new Error(msg);
         err.status = res.status;
         err.toastShown = true;
@@ -102,7 +123,7 @@ export const api = {
         toggleActiva: async (id, activa) => {
             const res = await customFetch(
                 `${API_URL}/propiedades/${id}/estado`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ activa })
@@ -111,29 +132,28 @@ export const api = {
             );
             return await res.json();
         },
-
         getAll: async (signal) => {
-            const options = signal ? { ...fetchOptions(), signal } : fetchOptions();
+            const options = signal ? { ...(await fetchOptions()), signal } : await fetchOptions();
             const res = await directFetch(`${API_URL}/propiedades`, options, 'Error al obtener propiedades');
             return await res.json();
         },
         getAllAdmin: async () => {
-            const res = await directFetch(`${API_URL}/propiedades/admin`, fetchOptions(), 'Error al obtener propiedades');
+            const res = await directFetch(`${API_URL}/propiedades/admin`, await fetchOptions(), 'Error al obtener propiedades');
             return await res.json();
         },
         getMetricas: async () => {
-            const res = await directFetch(`${API_URL}/propiedades/admin/metricas`, fetchOptions(), 'Error al obtener métricas');
+            const res = await directFetch(`${API_URL}/propiedades/admin/metricas`, await fetchOptions(), 'Error al obtener métricas');
             return await res.json();
         },
         getById: async (id) => {
-            const res = await directFetch(`${API_URL}/propiedades/${id}`, fetchOptions(), 'Propiedad no encontrada');
+            const res = await directFetch(`${API_URL}/propiedades/${id}`, await fetchOptions(), 'Propiedad no encontrada');
             return await res.json();
         },
         create: async (data) => {
             const formData = toFormData(data);
             const res = await customFetch(
                 `${API_URL}/propiedades`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'POST',
                     body: formData
                 }),
@@ -145,7 +165,7 @@ export const api = {
             const formData = toFormData(data);
             const res = await customFetch(
                 `${API_URL}/propiedades/${id}`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'PUT',
                     body: formData
                 }),
@@ -156,7 +176,7 @@ export const api = {
         delete: async (id) => {
             await customFetch(
                 `${API_URL}/propiedades/${id}`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'DELETE'
                 }),
                 'Error al eliminar la propiedad'
@@ -166,21 +186,21 @@ export const api = {
     },
     propietarios: {
         getAll: async () => {
-            const res = await customFetch(`${API_URL}/propietarios`, fetchOptions(), 'Error al obtener propietarios');
+            const res = await customFetch(`${API_URL}/propietarios`, await fetchOptions(), 'Error al obtener propietarios');
             return await res.json();
         },
         getActivos: async () => {
-            const res = await customFetch(`${API_URL}/propietarios/activos`, fetchOptions(), 'Error al obtener propietarios activos');
+            const res = await customFetch(`${API_URL}/propietarios/activos`, await fetchOptions(), 'Error al obtener propietarios activos');
             return await res.json();
         },
         getById: async (id) => {
-            const res = await customFetch(`${API_URL}/propietarios/${id}`, fetchOptions(), 'Propietario no encontrado');
+            const res = await customFetch(`${API_URL}/propietarios/${id}`, await fetchOptions(), 'Propietario no encontrado');
             return await res.json();
         },
         create: async (data) => {
             const res = await customFetch(
                 `${API_URL}/propietarios`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -192,7 +212,7 @@ export const api = {
         update: async (id, data) => {
             const res = await customFetch(
                 `${API_URL}/propietarios/${id}`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -204,7 +224,7 @@ export const api = {
         delete: async (id) => {
             const res = await customFetch(
                 `${API_URL}/propietarios/${id}`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'DELETE'
                 }),
                 'Error al desactivar propietario'
@@ -214,13 +234,13 @@ export const api = {
     },
     usuarios: {
         getAll: async () => {
-            const res = await customFetch(`${API_URL}/usuarios`, fetchOptions(), 'Error al obtener usuarios');
+            const res = await customFetch(`${API_URL}/usuarios`, await fetchOptions(), 'Error al obtener usuarios');
             return await res.json();
         },
         create: async (data) => {
             const res = await customFetch(
                 `${API_URL}/usuarios`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -232,7 +252,7 @@ export const api = {
         update: async (id, data) => {
             const res = await customFetch(
                 `${API_URL}/usuarios/${id}`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -244,7 +264,7 @@ export const api = {
         delete: async (id) => {
             const res = await customFetch(
                 `${API_URL}/usuarios/${id}`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'DELETE'
                 }),
                 'Error al desactivar usuario'
@@ -254,13 +274,13 @@ export const api = {
     },
     mensajes: {
         getAll: async () => {
-            const res = await customFetch(`${API_URL}/contacto`, fetchOptions(), 'Error al obtener mensajes');
+            const res = await customFetch(`${API_URL}/contacto`, await fetchOptions(), 'Error al obtener mensajes');
             return await res.json();
         },
         update: async (id, data) => {
             const res = await customFetch(
                 `${API_URL}/contacto/${id}`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -272,7 +292,7 @@ export const api = {
         registrarContacto: async (id) => {
             const res = await customFetch(
                 `${API_URL}/contacto/${id}/contacto`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'POST'
                 }),
                 'Error al registrar contacto'
@@ -282,7 +302,7 @@ export const api = {
         delete: async (id) => {
             const res = await customFetch(
                 `${API_URL}/contacto/${id}`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'DELETE'
                 }),
                 'Error al desactivar mensaje'
@@ -292,7 +312,7 @@ export const api = {
     },
     diccionarios: {
         getTiposInmueble: async () => {
-            const res = await directFetch(`${API_URL}/tipos-inmueble`, fetchOptions(), 'Error al obtener tipos de inmueble');
+            const res = await directFetch(`${API_URL}/tipos-inmueble`, await fetchOptions(), 'Error al obtener tipos de inmueble');
             return await res.json();
         }
     },
@@ -300,7 +320,7 @@ export const api = {
         enviar: async (data) => {
             const res = await directFetch(
                 `${API_URL}/contacto`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -314,7 +334,7 @@ export const api = {
         getResumen: async (data) => {
             const res = await customFetch(
                 `${API_URL}/ia/resumen`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -326,17 +346,17 @@ export const api = {
     },
     clientes: {
         getAll: async () => {
-            const res = await customFetch(`${API_URL}/clientes`, fetchOptions(), 'Error al obtener clientes');
+            const res = await customFetch(`${API_URL}/clientes`, await fetchOptions(), 'Error al obtener clientes');
             return await res.json();
         },
         getById: async (id) => {
-            const res = await customFetch(`${API_URL}/clientes/${id}`, fetchOptions(), 'Cliente no encontrado');
+            const res = await customFetch(`${API_URL}/clientes/${id}`, await fetchOptions(), 'Cliente no encontrado');
             return await res.json();
         },
         create: async (data) => {
             const res = await customFetch(
                 `${API_URL}/clientes`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -348,7 +368,7 @@ export const api = {
         update: async (id, data) => {
             const res = await customFetch(
                 `${API_URL}/clientes/${id}`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -360,7 +380,7 @@ export const api = {
         delete: async (id) => {
             const res = await customFetch(
                 `${API_URL}/clientes/${id}`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'DELETE'
                 }),
                 'Error al desactivar cliente'
@@ -370,17 +390,17 @@ export const api = {
     },
     transacciones: {
         getAll: async () => {
-            const res = await customFetch(`${API_URL}/transacciones`, fetchOptions(), 'Error al obtener transacciones');
+            const res = await customFetch(`${API_URL}/transacciones`, await fetchOptions(), 'Error al obtener transacciones');
             return await res.json();
         },
         getById: async (id) => {
-            const res = await customFetch(`${API_URL}/transacciones/${id}`, fetchOptions(), 'Transacción no encontrada');
+            const res = await customFetch(`${API_URL}/transacciones/${id}`, await fetchOptions(), 'Transacción no encontrada');
             return await res.json();
         },
         create: async (data) => {
             const res = await customFetch(
                 `${API_URL}/transacciones`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -392,7 +412,7 @@ export const api = {
         cerrar: async (id) => {
             const res = await customFetch(
                 `${API_URL}/transacciones/${id}/cerrar`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'PATCH'
                 }),
                 'Error al cerrar transacción'
@@ -402,7 +422,7 @@ export const api = {
         cancelar: async (id) => {
             const res = await customFetch(
                 `${API_URL}/transacciones/${id}/cancelar`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'PATCH'
                 }),
                 'Error al cancelar transacción'
@@ -412,14 +432,14 @@ export const api = {
     },
     auth: {
         needsBootstrap: async () => {
-            const res = await fetch(`${API_URL}/auth/needs-bootstrap`, fetchOptions());
+            const res = await fetch(`${API_URL}/auth/needs-bootstrap`, await fetchOptions());
             if (!res.ok) throw new Error('Error verificando estado del sistema');
             return await res.json();
         },
         bootstrap: async (data) => {
             const res = await directFetch(
                 `${API_URL}/auth/bootstrap`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -431,7 +451,7 @@ export const api = {
         login: async (email, password) => {
             const res = await directFetch(
                 `${API_URL}/auth/login`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -440,23 +460,25 @@ export const api = {
             );
             const data = await res.json();
             localStorage.setItem('isAuthenticated', 'true');
+            csrfTokenMemory = '';
             return data;
         },
         logout: async () => {
-            await fetch(`${API_URL}/auth/logout`, fetchOptions({ method: 'POST' }));
+            await fetch(`${API_URL}/auth/logout`, await fetchOptions({ method: 'POST' }));
             localStorage.removeItem('isAuthenticated');
+            csrfTokenMemory = '';
         },
         isAuthenticated: () => {
             return localStorage.getItem('isAuthenticated') === 'true';
         },
         verify: async () => {
-            const res = await customFetch(`${API_URL}/auth/verify`, fetchOptions(), 'Error al verificar sesión');
+            const res = await customFetch(`${API_URL}/auth/verify`, await fetchOptions(), 'Error al verificar sesión');
             return await res.json();
         },
         forgotPassword: async (email) => {
             const res = await directFetch(
                 `${API_URL}/auth/forgot-password`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -468,7 +490,7 @@ export const api = {
         resetPassword: async (token, password) => {
             const res = await directFetch(
                 `${API_URL}/auth/reset-password`,
-                fetchOptions({
+                await fetchOptions({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token, password })
