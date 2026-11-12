@@ -86,7 +86,10 @@ export default function LocationSection({ formData, provincias, cantones, distri
                             <label className="form-label" htmlFor="pf-lat">Latitud</label>
                             <input
                                 id="pf-lat"
-                                type="text"
+                                type="number"
+                                step="any"
+                                min="8.0"
+                                max="11.3"
                                 name="latitud"
                                 value={formData.latitud || ''}
                                 onChange={onChange}
@@ -99,7 +102,10 @@ export default function LocationSection({ formData, provincias, cantones, distri
                             <label className="form-label" htmlFor="pf-lng">Longitud</label>
                             <input
                                 id="pf-lng"
-                                type="text"
+                                type="number"
+                                step="any"
+                                min="-86.0"
+                                max="-82.5"
                                 name="longitud"
                                 value={formData.longitud || ''}
                                 onChange={onChange}

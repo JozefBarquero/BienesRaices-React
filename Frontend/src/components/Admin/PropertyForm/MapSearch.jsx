@@ -1,18 +1,36 @@
 import React, { useState } from 'react';
+import { toast } from '@/components/ui/Toast';
 
 export default function MapSearch({ onLocationChange }) {
     const [query, setQuery] = useState('');
+    const [searching, setSearching] = useState(false);
 
     const search = async () => {
-        if (!query) return;
+        const cleanQuery = query.trim();
+        if (!cleanQuery) return;
 
+        setSearching(true);
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanQuery)}&limit=1`,
+                {
+                    headers: {
+                        'User-Agent': 'BienesRaicesApp/1.0 (contact@bienesraices.com)'
+                    }
+                }
+            );
             const data = await res.json();
             if (data && data.length > 0) {
                 onLocationChange(data[0].lat, data[0].lon);
+                toast.success('Ubicación localizada en el mapa.');
+            } else {
+                toast.info('No se encontraron coordenadas para la búsqueda especificada.');
             }
-        } catch (error) {}
+        } catch {
+            toast.error('Error de red al consultar el servicio de geocodificación.');
+        } finally {
+            setSearching(false);
+        }
     };
 
     const handleKeyDown = (e) => {
@@ -31,10 +49,16 @@ export default function MapSearch({ onLocationChange }) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
+                disabled={searching}
             />
 
-            <button type="button" className="admin-action-btn admin-action-btn--primary" onClick={search}>
-                Buscar
+            <button
+                type="button"
+                className="admin-action-btn admin-action-btn--primary"
+                onClick={search}
+                disabled={searching}
+            >
+                {searching ? 'Buscando...' : 'Buscar'}
             </button>
         </div>
     );

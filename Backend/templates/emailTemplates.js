@@ -150,7 +150,7 @@ const infoBlock = (label, value) => `
     </table>
 `;
 
-export const emailLoginAlert = ({ nombre, fechaInicio, resetLink }) => ({
+export const emailLoginAlert = ({ nombre, fechaInicio, resetLink = `${SITE_URL}/admin` }) => ({
     subject: sanitizeHeader(`Alerta de seguridad · Inicio de sesión detectado`),
     html: layout(`
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -177,7 +177,7 @@ export const emailLoginAlert = ({ nombre, fechaInicio, resetLink }) => ({
             </tr>
             <tr>
                 <td class="email-padding" style="padding:0 40px 40px;">
-                    ${bulletproofButton(resetLink, 'Cambiar mi contraseña')}
+                    ${bulletproofButton(resetLink, 'Acceder al panel de administración')}
                     <p class="email-text email-muted" style="margin:0;font-size:12px;color:#94a3b8;text-align:center;line-height:1.6;">
                         Si tú realizaste este inicio de sesión, puedes ignorar este mensaje de forma segura.
                     </p>

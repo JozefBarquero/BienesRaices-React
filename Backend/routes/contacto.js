@@ -4,6 +4,7 @@ import transporter from '../config/mailer.js';
 import { emailNuevoMensajePropiedad } from '../templates/emailTemplates.js';
 import { contactLimiter } from '../middlewares/rateLimiters.js';
 import { verifyToken } from './auth.js';
+import { ContactoSchema } from '@bienesraices/shared';
 
 const router = express.Router();
 
@@ -58,17 +59,16 @@ const notificarCreadorPropiedad = async ({ propiedadId, clienteNombre, clienteEm
 };
 
 router.post('/', contactLimiter, async (req, res) => {
-    const { propiedad_id, nombre_cliente, email_cliente, telefono_cliente, mensaje, origen, prioridad } = req.body;
+    const parseResult = ContactoSchema.safeParse(req.body);
+    if (!parseResult.success) {
+        const issues = parseResult.error?.issues || parseResult.error?.errors || [];
+        return res.status(400).json({
+            error: issues[0]?.message || 'Datos de contacto inválidos.',
+            details: issues
+        });
+    }
 
-    if (!nombre_cliente || !email_cliente || !mensaje) {
-        return res.status(400).json({ error: 'Nombre, correo y mensaje son obligatorios.' });
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email_cliente)) {
-        return res.status(400).json({ error: 'Correo electrónico inválido.' });
-    }
-    if (String(mensaje).length > 5000) {
-        return res.status(400).json({ error: 'El mensaje es demasiado largo.' });
-    }
+    const { propiedad_id, nombre_cliente, email_cliente, telefono_cliente, mensaje, origen, prioridad } = parseResult.data;
 
     try {
         const [result] = await db.query(
@@ -81,8 +81,8 @@ router.post('/', contactLimiter, async (req, res) => {
                 email_cliente,
                 telefono_cliente || null,
                 mensaje,
-                origen || 'web',
-                prioridad || 'media'
+                origen,
+                prioridad
             ]
         );
 

@@ -27,10 +27,28 @@ const toFormData = (data) => {
     return formData;
 };
 
-const fetchOptions = (options = {}) => ({
-    ...options,
-    credentials: 'include'
-});
+const getCsrfToken = () => {
+    if (typeof document === 'undefined') return '';
+    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+};
+
+const fetchOptions = (options = {}) => {
+    const headers = { ...(options.headers || {}) };
+    const method = (options.method || 'GET').toUpperCase();
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+        const token = getCsrfToken();
+        if (token) {
+            headers['X-XSRF-TOKEN'] = token;
+        }
+    }
+    return {
+        ...options,
+        headers,
+        credentials: 'include',
+        cache: 'no-store'
+    };
+};
 
 const handleResponse = async (res, defaultMessage = 'Error en la solicitud') => {
     if (res.status === 401) {
@@ -70,8 +88,13 @@ const customFetch = async (url, options, defaultMessage) => {
 };
 
 const directFetch = async (url, options, defaultMessage) => {
-    const res = await fetch(url, options);
-    return await handleResponse(res, defaultMessage);
+    try {
+        const res = await fetch(url, options);
+        return await handleResponse(res, defaultMessage);
+    } catch (err) {
+        if (err.name === 'AbortError') throw err;
+        throw err;
+    }
 };
 
 export const api = {
@@ -89,8 +112,17 @@ export const api = {
             return await res.json();
         },
 
-        getAll: async () => {
-            const res = await directFetch(`${API_URL}/propiedades`, fetchOptions(), 'Error al obtener propiedades');
+        getAll: async (signal) => {
+            const options = signal ? { ...fetchOptions(), signal } : fetchOptions();
+            const res = await directFetch(`${API_URL}/propiedades`, options, 'Error al obtener propiedades');
+            return await res.json();
+        },
+        getAllAdmin: async () => {
+            const res = await directFetch(`${API_URL}/propiedades/admin`, fetchOptions(), 'Error al obtener propiedades');
+            return await res.json();
+        },
+        getMetricas: async () => {
+            const res = await directFetch(`${API_URL}/propiedades/admin/metricas`, fetchOptions(), 'Error al obtener métricas');
             return await res.json();
         },
         getById: async (id) => {

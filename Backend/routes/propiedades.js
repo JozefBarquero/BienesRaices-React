@@ -4,14 +4,23 @@ import db from '../config/db.js';
 import { uploadMiddleware, procesarYGuardarImagen } from '../utils/imageProcessor.js';
 import { verifyToken } from './auth.js';
 import { broadcast } from '../sse/catalogoBus.js';
+import { uploadLimiter } from '../middlewares/rateLimiters.js';
+import { PropertySchema } from '@bienesraices/shared';
 
 const router = express.Router();
+
+router.use((req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+});
 
 const getSessionUser = (req) => {
     const token = req.cookies?.adminToken;
     if (!token) return null;
     try {
-        return jwt.verify(token, process.env.JWT_SECRET);
+        return jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
     } catch {
         return null;
     }
@@ -46,6 +55,36 @@ const getPropiedadCompleta = async (id) => {
 router.get('/', async (req, res) => {
     try {
         const [rows] = await db.query(`
+            SELECT p.id, p.titulo, p.descripcion_corta, p.descripcion_larga,
+                   p.ubicacion, p.direccion_exacta, p.latitud, p.longitud,
+                   p.tipo_inmueble_id, p.tipo_operacion, p.precio, p.moneda,
+                   p.tipo_precio, p.habitaciones, p.banos, p.estacionamientos,
+                   p.area_construida, p.area_terreno, p.imagen_principal, p.url_video,
+                   p.destacada, p.activa, p.estado_comercial, p.fecha_creacion,
+                   ti.nombre AS tipo_inmueble_texto,
+                   JSON_ARRAYAGG(i.url_imagen) AS imagenes_secundarias
+            FROM propiedades p
+            LEFT JOIN tipos_inmueble ti ON p.tipo_inmueble_id = ti.id
+            LEFT JOIN imagenes_propiedad i ON p.id = i.propiedad_id
+            WHERE p.activa = TRUE
+            GROUP BY p.id
+            ORDER BY p.fecha_creacion DESC
+        `);
+
+        const propiedadesLimpias = rows.map(row => ({
+            ...row,
+            imagenes_secundarias: row.imagenes_secundarias[0] === null ? [] : row.imagenes_secundarias
+        }));
+
+        res.json(propiedadesLimpias);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.get('/admin', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await db.query(`
             SELECT p.*,
                    ti.nombre AS tipo_inmueble_texto,
                    prop.id AS propietario_ref_id,
@@ -60,14 +99,49 @@ router.get('/', async (req, res) => {
             LEFT JOIN personas per ON prop.persona_id = per.id
             LEFT JOIN imagenes_propiedad i ON p.id = i.propiedad_id
             GROUP BY p.id
+            ORDER BY p.fecha_creacion DESC
         `);
 
-        const propiedadesLimpias = rows.map(row => ({
+        const propiedadesAdmin = rows.map(row => ({
             ...row,
             imagenes_secundarias: row.imagenes_secundarias[0] === null ? [] : row.imagenes_secundarias
         }));
 
-        res.json(propiedadesLimpias);
+        res.json(propiedadesAdmin);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.get('/admin/metricas', verifyToken, async (req, res) => {
+    try {
+        const [propStats] = await db.query(`
+            SELECT
+                COUNT(CASE WHEN activa = TRUE THEN 1 END) AS props_activas,
+                COUNT(CASE WHEN destacada = 1 AND activa = TRUE THEN 1 END) AS props_destacadas,
+                SUM(CASE WHEN activa = TRUE AND moneda = 'USD' THEN precio ELSE 0 END) AS total_usd,
+                SUM(CASE WHEN activa = TRUE AND moneda = 'CRC' THEN precio ELSE 0 END) AS total_crc
+            FROM propiedades
+        `);
+
+        const [ownerStats] = await db.query('SELECT COUNT(*) AS total_propietarios FROM propietarios WHERE activo = TRUE');
+
+        const [msgStats] = await db.query(`
+            SELECT
+                COUNT(CASE WHEN estado = 'nuevo' AND activo = TRUE THEN 1 END) AS msgs_nuevos,
+                COUNT(CASE WHEN prioridad = 'alta' AND activo = TRUE THEN 1 END) AS msgs_alta
+            FROM mensajes_contacto
+        `);
+
+        res.json({
+            props_activas: Number(propStats[0]?.props_activas || 0),
+            props_destacadas: Number(propStats[0]?.props_destacadas || 0),
+            total_usd: Number(propStats[0]?.total_usd || 0),
+            total_crc: Number(propStats[0]?.total_crc || 0),
+            total_propietarios: Number(ownerStats[0]?.total_propietarios || 0),
+            msgs_nuevos: Number(msgStats[0]?.msgs_nuevos || 0),
+            msgs_alta: Number(msgStats[0]?.msgs_alta || 0)
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -75,20 +149,34 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
     try {
-        const [rows] = await db.query(`
+        const user = getSessionUser(req);
+
+        let query = `
             SELECT p.*,
-                   ti.nombre AS tipo_inmueble_texto,
-                   prop.id AS propietario_ref_id,
-                   per.nombre AS propietario_nombre,
-                   per.apellidos AS propietario_apellidos,
-                   per.razon_social AS propietario_razon_social,
-                   per.documento_identidad AS propietario_documento
+                   ti.nombre AS tipo_inmueble_texto
             FROM propiedades p
             LEFT JOIN tipos_inmueble ti ON p.tipo_inmueble_id = ti.id
-            LEFT JOIN propietarios prop ON p.propietario_id = prop.id
-            LEFT JOIN personas per ON prop.persona_id = per.id
             WHERE p.id = ?
-        `, [req.params.id]);
+        `;
+
+        if (user) {
+            query = `
+                SELECT p.*,
+                       ti.nombre AS tipo_inmueble_texto,
+                       prop.id AS propietario_ref_id,
+                       per.nombre AS propietario_nombre,
+                       per.apellidos AS propietario_apellidos,
+                       per.razon_social AS propietario_razon_social,
+                       per.documento_identidad AS propietario_documento
+                FROM propiedades p
+                LEFT JOIN tipos_inmueble ti ON p.tipo_inmueble_id = ti.id
+                LEFT JOIN propietarios prop ON p.propietario_id = prop.id
+                LEFT JOIN personas per ON prop.persona_id = per.id
+                WHERE p.id = ?
+            `;
+        }
+
+        const [rows] = await db.query(query, [req.params.id]);
 
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Propiedad no encontrada' });
@@ -96,11 +184,8 @@ router.get('/:id', async (req, res) => {
 
         const propiedad = rows[0];
 
-        if (!propiedad.activa) {
-            const user = getSessionUser(req);
-            if (!user) {
-                return res.status(404).json({ error: 'Propiedad no encontrada' });
-            }
+        if (!propiedad.activa && !user) {
+            return res.status(404).json({ error: 'Propiedad no encontrada' });
         }
 
         const [imagenes] = await db.query('SELECT url_imagen FROM imagenes_propiedad WHERE propiedad_id = ? ORDER BY orden ASC', [req.params.id]);
@@ -114,13 +199,24 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-router.post('/', verifyToken, (req, res, next) => {
+router.post('/', verifyToken, uploadLimiter, (req, res, next) => {
     uploadMiddleware(req, res, (err) => {
         if (err) return res.status(400).json({ error: err.message });
         next();
     });
 }, async (req, res) => {
-    const data = req.body;
+    const rawData = { ...req.body };
+    const parseResult = PropertySchema.safeParse(rawData);
+
+    if (!parseResult.success) {
+        const issues = parseResult.error?.issues || parseResult.error?.errors || [];
+        return res.status(400).json({
+            error: issues[0]?.message || 'Datos de propiedad inválidos.',
+            details: issues
+        });
+    }
+
+    const data = parseResult.data;
     let imagen_principal = null;
 
     if (req.files && req.files['imagen_principal']) {
@@ -136,6 +232,8 @@ router.post('/', verifyToken, (req, res, next) => {
     try {
         await conexion.beginTransaction();
 
+        const ubicacionCompleta = [data.distrito, data.canton, data.provincia].filter(Boolean).join(', ') || rawData.ubicacion || '';
+
         const [result] = await conexion.query(
             `INSERT INTO propiedades
              (titulo, descripcion_corta, descripcion_larga, ubicacion, direccion_exacta, latitud, longitud,
@@ -144,21 +242,26 @@ router.post('/', verifyToken, (req, res, next) => {
               destacada, activa, estado_comercial, creado_por, propietario_id)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'disponible', ?, ?)`,
             [
-                data.titulo, data.descripcion_corta, data.descripcion_larga, data.ubicacion, data.direccion_exacta,
-                data.latitud || null, data.longitud || null, data.tipo_inmueble_id || null, data.tipo_operacion || 'venta',
-                data.precio, data.moneda || 'USD', data.tipo_precio || 'fijo', data.habitaciones || null, data.banos || null,
-                data.estacionamientos || 0, data.area_construida || null, data.area_terreno || null, imagen_principal,
-                data.url_video || null, data.destacada === 'true' ? 1 : 0,
-                data.activa === 'true' || data.activa === true ? 1 : 0,
-                data.creado_por || req.user.id || null,
+                data.titulo, data.descripcion_corta || null, data.descripcion_larga, ubicacionCompleta, data.direccion_exacta,
+                data.latitud ?? null, data.longitud ?? null, data.tipo_inmueble_id, data.tipo_operacion,
+                data.precio, data.moneda, data.tipo_precio, data.habitaciones ?? null, data.banos ?? null,
+                data.estacionamientos ?? 0, data.area_construida ?? null, data.area_terreno ?? null, imagen_principal,
+                data.url_video || null, data.destacada ? 1 : 0,
+                data.activa ? 1 : 0,
+                req.user.id || null,
                 data.propietario_id || null
             ]
         );
 
         const propiedadId = result.insertId;
 
-        if (data.orden_galeria) {
-            const ordenGaleria = JSON.parse(data.orden_galeria);
+        if (rawData.orden_galeria) {
+            let ordenGaleria = [];
+            try {
+                ordenGaleria = JSON.parse(rawData.orden_galeria);
+            } catch {
+                ordenGaleria = [];
+            }
             let newFileIndex = 0;
 
             for (let i = 0; i < ordenGaleria.length; i++) {
@@ -202,13 +305,24 @@ router.post('/', verifyToken, (req, res, next) => {
     }
 });
 
-router.put('/:id', verifyToken, (req, res, next) => {
+router.put('/:id', verifyToken, uploadLimiter, (req, res, next) => {
     uploadMiddleware(req, res, (err) => {
         if (err) return res.status(400).json({ error: err.message });
         next();
     });
 }, async (req, res) => {
-    const data = req.body;
+    const rawData = { ...req.body };
+    const parseResult = PropertySchema.safeParse(rawData);
+
+    if (!parseResult.success) {
+        const issues = parseResult.error?.issues || parseResult.error?.errors || [];
+        return res.status(400).json({
+            error: issues[0]?.message || 'Datos de propiedad inválidos.',
+            details: issues
+        });
+    }
+
+    const data = parseResult.data;
     const { id } = req.params;
     const conexion = await db.getConnection();
 
@@ -228,6 +342,8 @@ router.put('/:id', verifyToken, (req, res, next) => {
             imagen_principal = await procesarYGuardarImagen(req.files['imagen_principal'][0].buffer, 'imagen_principal');
         }
 
+        const ubicacionCompleta = [data.distrito, data.canton, data.provincia].filter(Boolean).join(', ') || rawData.ubicacion || '';
+
         await conexion.query(
             `UPDATE propiedades
              SET titulo=?, descripcion_corta=?, descripcion_larga=?, ubicacion=?, direccion_exacta=?,
@@ -236,20 +352,25 @@ router.put('/:id', verifyToken, (req, res, next) => {
                  area_terreno=?, imagen_principal=?, url_video=?, destacada=?, activa=?, propietario_id=?
              WHERE id=?`,
             [
-                data.titulo, data.descripcion_corta, data.descripcion_larga, data.ubicacion, data.direccion_exacta,
-                data.latitud || null, data.longitud || null, data.tipo_inmueble_id || null, data.tipo_operacion,
-                data.precio, data.moneda, data.tipo_precio, data.habitaciones || null, data.banos || null,
-                data.estacionamientos || 0, data.area_construida || null, data.area_terreno || null, imagen_principal,
-                data.url_video || null, data.destacada === 'true' ? 1 : 0,
-                data.activa === 'true' || data.activa === true ? 1 : 0,
+                data.titulo, data.descripcion_corta || null, data.descripcion_larga, ubicacionCompleta, data.direccion_exacta,
+                data.latitud ?? null, data.longitud ?? null, data.tipo_inmueble_id, data.tipo_operacion,
+                data.precio, data.moneda, data.tipo_precio, data.habitaciones ?? null, data.banos ?? null,
+                data.estacionamientos ?? 0, data.area_construida ?? null, data.area_terreno ?? null, imagen_principal,
+                data.url_video || null, data.destacada ? 1 : 0,
+                data.activa ? 1 : 0,
                 data.propietario_id || null,
                 id
             ]
         );
 
-        if (data.orden_galeria) {
+        if (rawData.orden_galeria) {
             await conexion.query('DELETE FROM imagenes_propiedad WHERE propiedad_id = ?', [id]);
-            const ordenGaleria = JSON.parse(data.orden_galeria);
+            let ordenGaleria = [];
+            try {
+                ordenGaleria = JSON.parse(rawData.orden_galeria);
+            } catch {
+                ordenGaleria = [];
+            }
             let newFileIndex = 0;
 
             for (let i = 0; i < ordenGaleria.length; i++) {
@@ -317,7 +438,12 @@ router.patch('/:id/estado', verifyToken, async (req, res) => {
     try {
         const [result] = await db.query('UPDATE propiedades SET activa = ? WHERE id = ?', [activa, req.params.id]);
         if (result.affectedRows === 0) return res.status(404).json({ error: 'Propiedad no encontrada' });
-        broadcast('propiedad:estado', { id: req.params.id, activa });
+        if (activa) {
+            const propiedadCompleta = await getPropiedadCompleta(req.params.id);
+            broadcast('propiedad:estado', propiedadCompleta ?? { id: req.params.id, activa });
+        } else {
+            broadcast('propiedad:estado', { id: req.params.id, activa });
+        }
         res.json({ success: true, activa });
     } catch (error) {
         res.status(500).json({ error: error.message });

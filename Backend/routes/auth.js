@@ -5,6 +5,7 @@ import db from '../config/db.js';
 import transporter from '../config/mailer.js';
 import { emailLoginAlert, emailForgotPassword } from '../templates/emailTemplates.js';
 import { loginLimiter, forgotPasswordLimiter, resetPasswordLimiter, bootstrapLimiter } from '../middlewares/rateLimiters.js';
+import { generateCsrfToken } from '../middlewares/csrfMiddleware.js';
 import 'dotenv/config';
 
 const router = express.Router();
@@ -16,13 +17,24 @@ export const verifyToken = (req, res, next) => {
     if (!token) return res.status(401).json({ error: 'Acceso denegado' });
 
     try {
-        const verified = jwt.verify(token, process.env.JWT_SECRET);
+        const verified = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
         req.user = verified;
         next();
     } catch (error) {
         res.status(401).json({ error: 'Token inválido o expirado' });
     }
 };
+
+router.get('/csrf-token', (req, res) => {
+    const xsrfToken = generateCsrfToken();
+    res.cookie('XSRF-TOKEN', xsrfToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 8 * 60 * 60 * 1000
+    });
+    res.json({ success: true, token: xsrfToken });
+});
 
 router.get('/verify', verifyToken, (req, res) => {
     res.json({ success: true, user: req.user });
@@ -119,19 +131,11 @@ router.post('/login', loginLimiter, async (req, res) => {
             const token = jwt.sign(
                 { id: admin.id, email: admin.email, nombre: admin.nombre, apellidos: admin.apellidos, rol: admin.rol },
                 process.env.JWT_SECRET,
-                { expiresIn: '8h' }
+                { expiresIn: '8h', algorithm: 'HS256' }
             );
-
-            const resetToken = jwt.sign(
-                { email: admin.email },
-                process.env.JWT_SECRET,
-                { expiresIn: '1h' }
-            );
-            const resetLink = `${SITE_URL}/admin/reset-password?token=${resetToken}`;
 
             const fechaInicio = new Date().toLocaleString('es-CR', { timeZone: 'America/Costa_Rica' });
-
-            const template = emailLoginAlert({ nombre: admin.nombre, fechaInicio, resetLink });
+            const template = emailLoginAlert({ nombre: admin.nombre, fechaInicio, resetLink: `${SITE_URL}/admin` });
 
             transporter.sendMail({
                 from: process.env.EMAIL_FROM,
@@ -142,8 +146,17 @@ router.post('/login', loginLimiter, async (req, res) => {
                 console.error('[MAIL] Error enviando alerta de login:', err.message);
             });
 
+            const xsrfToken = generateCsrfToken();
+
             res.cookie('adminToken', token, {
                 httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+                maxAge: 8 * 60 * 60 * 1000
+            });
+
+            res.cookie('XSRF-TOKEN', xsrfToken, {
+                httpOnly: false,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
                 maxAge: 8 * 60 * 60 * 1000
@@ -164,6 +177,11 @@ router.post('/logout', (req, res) => {
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
     });
+    res.clearCookie('XSRF-TOKEN', {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    });
     return res.json({ success: true, message: 'Sesión cerrada exitosamente' });
 });
 
@@ -178,24 +196,21 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
             [email]
         );
 
-        if (!users || users.length === 0) {
-            return res.status(404).json({ error: 'Usuario no encontrado o inactivo.' });
+        if (users && users.length > 0) {
+            const user = users[0];
+            const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h', algorithm: 'HS256' });
+            const resetLink = `${SITE_URL}/admin/reset-password?token=${token}`;
+            const template = emailForgotPassword({ nombre: user.nombre, resetLink });
+
+            await transporter.sendMail({
+                from: process.env.EMAIL_FROM,
+                to: email,
+                subject: template.subject,
+                html: template.html
+            });
         }
 
-        const user = users[0];
-        const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        const resetLink = `${SITE_URL}/admin/reset-password?token=${token}`;
-
-        const template = emailForgotPassword({ nombre: user.nombre, resetLink });
-
-        await transporter.sendMail({
-            from: process.env.EMAIL_FROM,
-            to: email,
-            subject: template.subject,
-            html: template.html
-        });
-
-        res.json({ success: true, message: 'Enlace enviado al correo electrónico.' });
+        res.json({ success: true, message: 'Si el correo electrónico está registrado, se enviará un enlace de recuperación.' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -204,7 +219,7 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
 router.post('/reset-password', resetPasswordLimiter, async (req, res) => {
     const { token, password } = req.body;
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
         if (String(password).length < 8) {
             return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
         }

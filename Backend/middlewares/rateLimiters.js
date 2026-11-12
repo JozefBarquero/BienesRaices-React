@@ -24,7 +24,6 @@ export const loginLimiter = rateLimit({
     limit: 10,
     keyGenerator: (req) => {
         const email = String(req.body?.email || '').toLowerCase().trim();
-        // Normaliza la IP (maneja IPv6 correctamente)
         const ip = ipKeyGenerator(req);
         return email ? `${ip}|${email}` : ip;
     }
@@ -56,11 +55,20 @@ export const bootstrapLimiter = rateLimit({
 export const contactLimiter = rateLimit({
     ...base,
     windowMs: 60 * 60 * 1000,
-    limit: 5
+    limit: 10
 });
 
 export const uploadLimiter = rateLimit({
     ...base,
     windowMs: 15 * 60 * 1000,
     limit: 30
+});
+
+export const iaLimiter = rateLimit({
+    ...base,
+    windowMs: 15 * 60 * 1000,
+    limit: 8,
+    handler: (req, res) => {
+        res.status(429).json({ error: 'Límite de solicitudes de IA superado. Intente de nuevo en 15 minutos.' });
+    }
 });

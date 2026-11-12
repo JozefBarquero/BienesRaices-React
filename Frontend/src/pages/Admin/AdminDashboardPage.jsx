@@ -1,19 +1,20 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/services/api';
 import { toast } from '@/components/ui/Toast';
 import { confirmDialog } from '@/components/ui/ConfirmDialog';
-import PropertyForm from '@/components/ui/PropertyForm';
-import Dashboard from '@/components/Admin/AdminDashboard/Dashboard';
-import UsuariosAdmin from '@/components/Admin/AdminDashboard/UsuariosAdmin';
-import PropietariosAdmin from '@/components/Admin/AdminDashboard/PropietariosAdmin';
-import MensajesAdmin from '@/components/Admin/AdminDashboard/MensajesAdmin';
-import ClientesAdmin from '@/components/Admin/AdminDashboard/ClientesAdmin';
-import TransaccionesAdmin from '@/components/Admin/AdminDashboard/TransaccionesAdmin';
 import SearchFilterBar from '@/components/Admin/AdminDashboard/SearchFilterBar';
 import { LiquidGlassPanel, LiquidGlassButton } from '@/components/ui/LiquidGlass';
 import { formatPrice } from '@/utils/formatters';
 import '@/assets/styles/admin.css';
+
+const PropertyForm = lazy(() => import('@/components/ui/PropertyForm'));
+const Dashboard = lazy(() => import('@/components/Admin/AdminDashboard/Dashboard'));
+const UsuariosAdmin = lazy(() => import('@/components/Admin/AdminDashboard/UsuariosAdmin'));
+const PropietariosAdmin = lazy(() => import('@/components/Admin/AdminDashboard/PropietariosAdmin'));
+const MensajesAdmin = lazy(() => import('@/components/Admin/AdminDashboard/MensajesAdmin'));
+const ClientesAdmin = lazy(() => import('@/components/Admin/AdminDashboard/ClientesAdmin'));
+const TransaccionesAdmin = lazy(() => import('@/components/Admin/AdminDashboard/TransaccionesAdmin'));
 
 const normalizar = (str) =>
     String(str || '')
@@ -121,7 +122,7 @@ export default function AdminDashboardPage() {
     const loadProperties = async () => {
         setLoading(true);
         try {
-            const data = await api.propiedades.getAll();
+            const data = await api.propiedades.getAllAdmin();
             setPropiedades(data);
         } catch (error) {
             console.error(error);
@@ -270,6 +271,7 @@ export default function AdminDashboardPage() {
                     )}
                 </nav>
 
+                <Suspense fallback={<div className="admin-loading justify-content-center p-5"><span className="admin-spinner" /></div>}>
                 {activeTab === 'dashboard' && (
                     <Dashboard
                         currentUser={currentUser}
@@ -507,6 +509,7 @@ export default function AdminDashboardPage() {
                 {activeTab === 'usuarios' && currentUser?.rol === 'Administrador' && (
                     <UsuariosAdmin currentUser={currentUser} />
                 )}
+                </Suspense>
             </div>
         </main>
     );

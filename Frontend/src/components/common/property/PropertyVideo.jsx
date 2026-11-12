@@ -1,7 +1,8 @@
 import { getEmbedUrl } from '@/utils/urlConvert';
 
 export default function PropertyVideo({ url, title }) {
-    if (!url) return null;
+    const embedUrl = getEmbedUrl(url);
+    if (!embedUrl) return null;
 
     return (
         <div>
@@ -9,8 +10,9 @@ export default function PropertyVideo({ url, title }) {
 
             <div className="ratio ratio-16x9 prop-video-frame">
                 <iframe
-                    src={getEmbedUrl(url)}
+                    src={embedUrl}
                     title={`Video de ${title}`}
+                    sandbox="allow-scripts allow-same-origin allow-presentation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                 />

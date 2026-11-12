@@ -29,6 +29,7 @@ export default function PricingSection({ formData, onChange }) {
                     <input
                         id="pf-precio"
                         type="number"
+                        min="0.01"
                         step="0.01"
                         name="precio"
                         value={formData.precio || ''}

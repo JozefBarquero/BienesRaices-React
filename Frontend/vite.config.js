@@ -29,6 +29,18 @@ export default defineConfig({
       '.trycloudflare.com',
     ],
     proxy: {
+      '/api/sse': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        timeout: 0,
+        proxyTimeout: 0,
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            proxyRes.headers['cache-control'] = 'no-cache, no-transform';
+            delete proxyRes.headers['content-length'];
+          });
+        },
+      },
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,

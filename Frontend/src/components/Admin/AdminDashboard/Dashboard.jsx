@@ -117,23 +117,37 @@ export default function Dashboard({ currentUser, onNavigate, onNewProperty }) {
     const [mensajes, setMensajes] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
 
+    const [metricas, setMetricas] = useState({
+        props_activas: 0,
+        props_destacadas: 0,
+        total_usd: 0,
+        total_crc: 0,
+        total_propietarios: 0,
+        msgs_nuevos: 0,
+        msgs_alta: 0
+    });
+
     const isAdmin = currentUser?.rol === 'Administrador';
 
     useEffect(() => {
         let mounted = true;
         const load = async () => {
             try {
-                const [props, owners, msgs, users] = await Promise.all([
-                    api.propiedades.getAll(),
+                const [props, owners, msgs, users, metricsData] = await Promise.all([
+                    api.propiedades.getAllAdmin(),
                     api.propietarios.getAll(),
                     api.mensajes.getAll(),
                     isAdmin ? api.usuarios.getAll() : Promise.resolve([]),
+                    api.propiedades.getMetricas().catch(() => null)
                 ]);
                 if (!mounted) return;
                 setPropiedades(props);
                 setPropietarios(owners);
                 setMensajes(msgs);
                 setUsuarios(users);
+                if (metricsData) {
+                    setMetricas(metricsData);
+                }
             } catch (err) {
                 console.error(err);
             } finally {
@@ -145,15 +159,23 @@ export default function Dashboard({ currentUser, onNavigate, onNewProperty }) {
     }, [isAdmin]);
 
     const stats = useMemo(() => {
-        const propsActivas = propiedades.filter((p) => p.activa).length;
-        const propsDestacadas = propiedades.filter((p) => p.destacada === 1).length;
-        const ownersActivos = propietarios.filter((p) => p.activo).length;
-        const msgsNuevos = mensajes.filter((m) => m.estado === 'nuevo' && m.activo).length;
-        const msgsAlta = mensajes.filter((m) => m.prioridad === 'alta' && m.activo).length;
+        const propsActivas = metricas.props_activas || propiedades.filter((p) => p.activa).length;
+        const propsDestacadas = metricas.props_destacadas || propiedades.filter((p) => p.destacada === 1).length;
+        const ownersActivos = metricas.total_propietarios || propietarios.filter((p) => p.activo).length;
+        const msgsNuevos = metricas.msgs_nuevos || mensajes.filter((m) => m.estado === 'nuevo' && m.activo).length;
+        const msgsAlta = metricas.msgs_alta || mensajes.filter((m) => m.prioridad === 'alta' && m.activo).length;
         const trabajadoresActivos = usuarios.filter((u) => u.activo).length;
-        const valorTotal = propiedades.filter((p) => p.activa && p.precio).reduce((s, p) => s + Number(p.precio || 0), 0);
-        return { propsActivas, propsDestacadas, ownersActivos, msgsNuevos, msgsAlta, trabajadoresActivos, valorTotal };
-    }, [propiedades, propietarios, mensajes, usuarios]);
+        return {
+            propsActivas,
+            propsDestacadas,
+            ownersActivos,
+            msgsNuevos,
+            msgsAlta,
+            trabajadoresActivos,
+            totalUsd: metricas.total_usd,
+            totalCrc: metricas.total_crc
+        };
+    }, [metricas, propiedades, propietarios, mensajes, usuarios]);
 
     const mensajesRecientes = useMemo(() => {
         return [...mensajes]

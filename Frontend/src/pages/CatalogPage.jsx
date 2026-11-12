@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useDeferredValue, useCallback } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { api, getImageUrl } from '@/services/api';
 import PropiedadCard from '@/components/ui/PropiedadCard';
@@ -21,23 +21,38 @@ export default function CatalogPage() {
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 9;
 
+    const isFetchingRef = useRef(false);
+    const flushBufferRef = useRef(null);
+
     const shouldReduceMotion = useReducedMotion();
     const deferredFiltro = useDeferredValue(filtro);
     const deferredMinPrecio = useDeferredValue(minPrecio);
     const deferredMaxPrecio = useDeferredValue(maxPrecio);
 
+    const expandPriceRange = useCallback((price) => {
+        const p = Number(price);
+        if (isNaN(p) || p <= 0) return;
+        setGlobalMin((prev) => Math.min(prev, p));
+        setGlobalMax((prev) => Math.max(prev, p));
+        setMinPrecio((prev) => Math.min(prev, p));
+        setMaxPrecio((prev) => Math.max(prev, p));
+    }, []);
+
     const handlePropiedadCreada = useCallback((nuevaPropiedad) => {
+        if (!(nuevaPropiedad.activa === 1 || nuevaPropiedad.activa === true)) return;
         setPropiedades((prev) => {
             const existe = prev.some((p) => String(p.id) === String(nuevaPropiedad.id));
             if (existe) return prev;
             return [...prev, { ...nuevaPropiedad, imagen: getImageUrl(nuevaPropiedad.imagen_principal) }];
         });
-    }, []);
+        expandPriceRange(nuevaPropiedad.precio);
+    }, [expandPriceRange]);
 
     const handlePropiedadActualizada = useCallback((propiedadActualizada) => {
         setPropiedades((prev) => {
             const existe = prev.some((p) => String(p.id) === String(propiedadActualizada.id));
             if (!existe) {
+                if (!(propiedadActualizada.activa === 1 || propiedadActualizada.activa === true)) return prev;
                 return [...prev, { ...propiedadActualizada, imagen: getImageUrl(propiedadActualizada.imagen_principal) }];
             }
             return prev.map((p) =>
@@ -46,7 +61,10 @@ export default function CatalogPage() {
                     : p
             );
         });
-    }, []);
+        if (propiedadActualizada.activa === 1 || propiedadActualizada.activa === true) {
+            expandPriceRange(propiedadActualizada.precio);
+        }
+    }, [expandPriceRange]);
 
     const handlePropiedadDesactivada = useCallback(({ id }) => {
         setPropiedades((prev) =>
@@ -54,55 +72,88 @@ export default function CatalogPage() {
         );
     }, []);
 
-    const handlePropiedadEstado = useCallback(({ id, activa }) => {
-        setPropiedades((prev) =>
-            prev.map((p) => (String(p.id) === String(id) ? { ...p, activa: activa ? 1 : 0 } : p))
-        );
-    }, []);
+    const handlePropiedadEstado = useCallback((payload) => {
+        const { id, activa } = payload;
+        const isActive = activa === true || activa === 1;
+        setPropiedades((prev) => {
+            const existe = prev.some((p) => String(p.id) === String(id));
+            if (!existe) {
+                if (!isActive || !payload.titulo) return prev;
+                return [...prev, { ...payload, activa: 1, imagen: getImageUrl(payload.imagen_principal) }];
+            }
+            return prev.map((p) => {
+                if (String(p.id) !== String(id)) return p;
+                if (!isActive) return { ...p, activa: 0 };
+                if (payload.titulo) return { ...payload, activa: 1, imagen: getImageUrl(payload.imagen_principal) };
+                return { ...p, activa: 1 };
+            });
+        });
+        if (isActive) {
+            expandPriceRange(payload.precio);
+        }
+    }, [expandPriceRange]);
 
-    useCatalogoSSE({
-        onPropiedadCreada: handlePropiedadCreada,
-        onPropiedadActualizada: handlePropiedadActualizada,
-        onPropiedadDesactivada: handlePropiedadDesactivada,
-        onPropiedadEstado: handlePropiedadEstado,
-    });
+    const { flushBuffer } = useCatalogoSSE(
+        {
+            onPropiedadCreada: handlePropiedadCreada,
+            onPropiedadActualizada: handlePropiedadActualizada,
+            onPropiedadDesactivada: handlePropiedadDesactivada,
+            onPropiedadEstado: handlePropiedadEstado,
+        },
+        null,
+        isFetchingRef
+    );
+
+    flushBufferRef.current = flushBuffer;
+
+    const fetchPropiedades = useCallback(async (signal) => {
+        isFetchingRef.current = true;
+        try {
+            const data = await api.propiedades.getAll(signal);
+            if (signal?.aborted) return;
+
+            const propiedadesNormalizadas = data.map((p) => ({
+                ...p,
+                imagen: getImageUrl(p.imagen_principal),
+            }));
+            setPropiedades(propiedadesNormalizadas);
+
+            const precios = propiedadesNormalizadas
+                .filter((p) => p.activa === 1 || p.activa === true)
+                .map((p) => Number(p.precio))
+                .filter((n) => !isNaN(n) && n > 0);
+
+            if (precios.length > 0) {
+                const min = Math.min(...precios);
+                const max = Math.max(...precios);
+                setGlobalMin((prev) => Math.min(prev, min));
+                setGlobalMax((prev) => Math.max(prev, max));
+                setMinPrecio((prev) => (prev === 0 ? min : prev));
+                setMaxPrecio((prev) => (prev === 1000000 ? max : prev));
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            console.error(error);
+        } finally {
+            isFetchingRef.current = false;
+            flushBufferRef.current?.();
+            setLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         if (!localStorage.getItem('hideCurrencyDisclaimer')) {
             setShowDisclaimer(true);
         }
 
-        const fetchPropiedades = async () => {
-            try {
-                const data = await api.propiedades.getAll();
-                const propiedadesNormalizadas = data.map((p) => ({
-                    ...p,
-                    imagen: getImageUrl(p.imagen_principal),
-                }));
-                setPropiedades(propiedadesNormalizadas);
+        const controller = new AbortController();
+        fetchPropiedades(controller.signal);
 
-                const precios = propiedadesNormalizadas
-                    .filter((p) => p.activa === 1 || p.activa === true)
-                    .map((p) => Number(p.precio))
-                    .filter((n) => !isNaN(n) && n > 0);
-
-                if (precios.length > 0) {
-                    const min = Math.min(...precios);
-                    const max = Math.max(...precios);
-                    setGlobalMin(min);
-                    setGlobalMax(max);
-                    setMinPrecio(min);
-                    setMaxPrecio(max);
-                }
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
+        return () => {
+            controller.abort();
+            isFetchingRef.current = false;
         };
-
-        fetchPropiedades();
-    }, []);
+    }, [fetchPropiedades]);
 
     useEffect(() => {
         setPaginaActual(1);
